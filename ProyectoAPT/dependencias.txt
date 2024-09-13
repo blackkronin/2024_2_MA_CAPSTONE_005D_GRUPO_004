@@ -1,0 +1,10 @@
+Todas instaladas dentro del entrono virtual 
+
+python -m venv entornoVirtual
+entornoVirtual\Scripts\activate
+
+pip install flask
+pip install Flask Flask-CORS
+
+
+pip install -r requirements.txt
