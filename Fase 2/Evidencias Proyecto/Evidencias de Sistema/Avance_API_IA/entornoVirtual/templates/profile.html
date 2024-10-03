@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-card {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 400px;
+        margin: 40px auto;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .form-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .form-body {
+        margin-bottom: 20px;
+    }
+    .button-secondary {
+        background-color: #6c757d;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+    }
+    .button-secondary:hover {
+        background-color: #5a6268;
+    }
+</style>
+
+<div class="form-card">
+    <div class="form-header">
+        <h2>Your Profile</h2>
+    </div>
+    <div class="form-body">
+        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <p><strong>Email:</strong> {{ current_user.email }}</p>
+        <p><strong>Interests:</strong> {{ current_user.interests|join(', ') }}</p>
+    </div>
+    <div class="form-actions">
+        <a href="{{ url_for('routes.edit_profile') }}" class="button-secondary">Edit Profile</a>
+        <a href="{{ url_for('routes.logout') }}" class="button-secondary">Logout</a>
+    </div>
+</div>
+{% endblock %}

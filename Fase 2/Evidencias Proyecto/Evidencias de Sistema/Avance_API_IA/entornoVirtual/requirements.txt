@@ -1,0 +1,23 @@
+Flask
+Flask-CORS
+requests
+python-dotenv
+flask-login
+flask-bcrypt
+flask-wtf
+WTForms
+email-validator
+Werkzeug==2.2.2
+mysql-connector-python
+# Additional dependencies from ParteAlonso
+Flask
+Flask-CORS
+requests
+python-dotenv
+ollama
+python-ollama
+langchain
+langchain_community
+sentence-transformers
+pypdf
+chromadb
