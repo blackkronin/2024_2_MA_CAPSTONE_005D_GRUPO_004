@@ -3,6 +3,9 @@ from flask_login import login_user, logout_user, current_user, login_required
 from models import create_user, get_user_by_email, get_user_by_uid
 from forms import RegisterForm, LoginForm, EditProfileForm
 import requests
+from noticias_servicio import obtener_todas_las_noticias
+from IA_servicio import procesar_pregunta_ia
+
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()  # No necesitas pasar la instancia de `app` directamente aquí
 
@@ -130,6 +133,9 @@ def index():
 
 @routes.route('/chat', methods=['GET', 'POST'])
 def chat():
+    """
+    Ruta para el chat con IA que procesa y resume noticias.
+    """
     if request.method == 'POST':
         categoria = request.form.get('categoria', 'general')
         pais = request.form.get('pais', 'us')
