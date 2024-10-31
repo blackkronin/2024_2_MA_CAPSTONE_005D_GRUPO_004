@@ -7,7 +7,6 @@ interface Article {
   title: string;
   url: string;
   content: string;
-  images: string[];
 }
 
 export async function searchArticles(userPrompt: string): Promise<Article[]> {
@@ -15,8 +14,8 @@ export async function searchArticles(userPrompt: string): Promise<Article[]> {
     console.log("Iniciando la búsqueda de artículos...");
     const response = await tvly.search(userPrompt, {
       includeAnswer: true,
-      includeImages: true,
-      maxResults: 4,
+      includeImages: false,
+      maxResults: 8,
     });
     console.log("Búsqueda completada. Artículos encontrados:", response.results.length);
 
@@ -24,7 +23,6 @@ export async function searchArticles(userPrompt: string): Promise<Article[]> {
       title: article.title,
       url: article.url,
       content: article.content,
-      images: article.images || [],
     }));
 
     return articles;

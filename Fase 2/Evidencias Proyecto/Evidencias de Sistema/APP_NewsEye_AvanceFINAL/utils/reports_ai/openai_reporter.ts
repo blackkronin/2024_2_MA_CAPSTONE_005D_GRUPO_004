@@ -10,7 +10,6 @@ interface Article {
   title: string;
   url: string;
   content: string;
-  images: string[];
 }
 
 export async function generateReportStream(articles: Article[], prompt: string, tone: string): Promise<ReadableStream> {
@@ -19,7 +18,7 @@ export async function generateReportStream(articles: Article[], prompt: string, 
     messages: [
       {
         role: 'user',
-        content: `Genera un informe en formato Markdown con estilo APA basado en los siguientes artículos. Incluye introducción, desarrollo, conclusión, referencias y muestra las imágenes. Tono: ${tone}. Artículos: ${JSON.stringify(articles)}`,
+        content: `Genera un informe en formato Markdown con estilo APA basado en los siguientes artículos. Incluye introducción, desarrollo, conclusión, referencias. Tono: ${tone}. Artículos: ${JSON.stringify(articles)}`,
       },
     ],
     stream: true,
