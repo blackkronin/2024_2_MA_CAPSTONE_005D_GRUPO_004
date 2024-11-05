@@ -1,10 +1,9 @@
+"use client";
+
 import Hero from "@/components/hero";
-import ConnectSupabaseSteps from "@/components/tutorial/connect-supabase-steps";
-import SignUpUserSteps from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import TraerNoticias from "@/components/home/traer-noticias";
 
-export default async function Index() {
+export default function Index() {
   return (
     <>
       <Hero />
