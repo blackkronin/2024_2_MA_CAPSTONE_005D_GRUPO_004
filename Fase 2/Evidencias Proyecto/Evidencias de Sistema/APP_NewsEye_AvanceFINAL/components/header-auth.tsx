@@ -1,61 +1,64 @@
-import { signOutAction } from "@/app/actions";
-import { hasEnvVars } from "@/utils/supabase/check-env-vars";
+"use client";
+
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
+import { supabase } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
-export default async function AuthButton() {
-  const supabase = await createClient();
+const HeaderAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState("");
+  const router = useRouter();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", session.user.id)
+          .single();
+        setUserName(data?.name || session.user.email);
+      }
+    };
 
-  if (!hasEnvVars) {
+    fetchUserData();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/sign-in");
+  };
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return (
-      <>
-        <div className="flex gap-4 items-center">
-          <div>
-            <Badge
-              variant={"default"}
-              className="font-normal pointer-events-none"
-            >
-              Please update .env.local file with anon key and url
-            </Badge>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              asChild
-              size="sm"
-              variant={"outline"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-in">Sign in</Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant={"default"}
-              disabled
-              className="opacity-75 cursor-none pointer-events-none"
-            >
-              <Link href="/sign-up">Sign up</Link>
-            </Button>
-          </div>
-        </div>
-      </>
+      <div className="flex gap-4 items-center">
+        <Badge variant={"default"} className="font-normal pointer-events-none">
+          Please update .env.local file with anon key and url
+        </Badge>
+      </div>
     );
   }
+
   return user ? (
     <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <form action={signOutAction}>
-        <Button type="submit" variant={"outline"}>
-          Sign out
-        </Button>
-      </form>
+      <span>Hey, {userName}!</span>
+      <Button onClick={handleSignOut} variant={"outline"}>
+        Sign out
+      </Button>
     </div>
   ) : (
     <div className="flex gap-2">
@@ -67,4 +70,6 @@ export default async function AuthButton() {
       </Button>
     </div>
   );
-}
+};
+
+export default HeaderAuth;

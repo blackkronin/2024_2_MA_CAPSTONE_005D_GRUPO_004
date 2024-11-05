@@ -1,23 +1,28 @@
 // utils/reports_ai/tavily_scraper.ts
-const { tavily } = require("@tavily/core");
+import { tavily } from "@tavily/core";
 
-const tvly = tavily({ apiKey: "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" });
+const tvly = tavily({ apiKey: process.env.NEXT_PUBLIC_TAVILY_API_KEY! });
 
-export async function searchArticles(userPrompt: string) {
+interface Article {
+  title: string;
+  url: string;
+  content: string;
+}
+
+export async function searchArticles(userPrompt: string): Promise<Article[]> {
   try {
     console.log("Iniciando la búsqueda de artículos...");
     const response = await tvly.search(userPrompt, {
       includeAnswer: true,
-      includeImages: true,
-      maxResults: 4,
+      includeImages: false,
+      maxResults: 8,
     });
     console.log("Búsqueda completada. Artículos encontrados:", response.results.length);
 
-    const articles = response.results.map((article: any) => ({
+    const articles: Article[] = response.results.map((article: any) => ({
       title: article.title,
       url: article.url,
       content: article.content,
-      images: article.images || [],
     }));
 
     return articles;

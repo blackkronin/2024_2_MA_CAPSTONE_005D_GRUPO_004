@@ -12,13 +12,15 @@ const SignUp = () => {
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [studies, setStudies] = useState('');
-  const [interests, setInterests] = useState([]); // Cambiado a array para múltiples intereses
+  const [interests, setInterests] = useState<string[]>([]); // Cambiado a array para múltiples intereses
   const [avatarUrl, setAvatarUrl] = useState('');
   const [notification, setNotification] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleInterestChange = (event) => {
+  interface InterestChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
+
+  const handleInterestChange = (event: InterestChangeEvent) => {
     const value = event.target.value;
     setInterests(prevInterests =>
       prevInterests.includes(value)
@@ -27,7 +29,22 @@ const SignUp = () => {
     );
   };
 
-  const handleSubmit = async (event) => {
+  interface SignUpData {
+    email: string;
+    password: string;
+    options: {
+      emailRedirectTo: string;
+      data: {
+        full_name: string;
+        birth_date: string;
+        studies: string;
+        interests: string;
+        avatar_url: string;
+      };
+    };
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (password !== confirmPassword) {
@@ -37,11 +54,11 @@ const SignUp = () => {
 
     setError('');
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const signUpData: SignUpData = {
       email,
       password,
       options: {
-        emailRedirectTo: 'http://localhost:3000/welcome',
+        emailRedirectTo: 'http://localhost:3000/',
         data: {
           full_name: name,
           birth_date: birthDate,
@@ -50,7 +67,9 @@ const SignUp = () => {
           avatar_url: avatarUrl,
         },
       },
-    });
+    };
+
+    const { data, error: signUpError } = await supabase.auth.signUp(signUpData);
 
     if (signUpError) {
       console.log("Error en el registro:", signUpError);
