@@ -1,38 +1,65 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/utils/supabase/client';
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import LogoutButton from './LogoutButton';
-import { User } from '@supabase/supabase-js';
+import { supabase } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
-export default function AuthButton() {
+const HeaderAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+    const fetchUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .single();
+        setUserName(data?.full_name || session.user.email);
+      }
     };
 
-    getUser();
+    fetchUserData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  if (loading) {
-    return <div>Cargando...</div>;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/sign-in");
+  };
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return (
+      <div className="flex gap-4 items-center">
+        <Badge variant={"default"} className="font-normal pointer-events-none">
+          Please update .env.local file with anon key and url
+        </Badge>
+      </div>
+    );
   }
 
   return user ? (
-    <LogoutButton />
+    <div className="flex items-center gap-4">
+      <span>Hola, {userName}!</span>
+      <Button onClick={handleSignOut} variant={"outline"}>
+        Cerrar Sesión
+      </Button>
+    </div>
   ) : (
     <div className="flex gap-2">
       <Button asChild size="sm" variant={"outline"}>
@@ -43,4 +70,6 @@ export default function AuthButton() {
       </Button>
     </div>
   );
-}
+};
+
+export default HeaderAuth;
