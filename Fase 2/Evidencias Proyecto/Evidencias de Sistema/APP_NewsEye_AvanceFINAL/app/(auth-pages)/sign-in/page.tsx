@@ -1,157 +1,158 @@
-"use client"
+"use client";
 
-import { useEffect,useState } from 'react'
-import { supabase } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react';
+import { supabase } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const getSession = async () => {
-    const {
-      data: {
-        session
-      }
-    } = await supabase.auth.getSession();
-    console.log(session);
-  }
-  getSession();
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push('/')
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      router.push('/');
     }
-  }
+  };
+
+  useEffect(() => {
+    getSession();
+  }, []);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else if (data.user) {
+        router.push('/');
+        router.refresh();
+      }
+    } catch (err) {
+      setError('Error inesperado durante el inicio de sesión');
+      console.error(err);
+    }
+  };
+
   return (
-    <div>
-      <div className="flex justify-center items-center min-h-screen">
-        <form onSubmit={handleSignIn} className="bg-gray p-8 rounded shadow-md w-96">
-          <h2 className="text-2xl font-bold mb-4">Inicio de Sesión</h2>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
-          <div className="mb-4">
-            <label htmlFor="email" className="block mb-2">
-              Correo de usuario
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="password" className="block mb-2">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-          >
-            Iniciar Sesión
-          </button>
-        </form>
-      </div>
+    <div className="page-container">
+      <form onSubmit={handleSignIn} className="form">
+        <h1>Inicio de Sesión</h1>
+        <div className="form-group">
+          <label htmlFor="email">Correo de usuario</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Contraseña</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        {error && <p className="error-message">{error}</p>}
+        <button type="submit">Iniciar Sesión</button>
+        <p className="login-link">
+          ¿No tienes una cuenta? <Link href="/sign-up">Regístrate</Link>
+        </p>
+      </form>
+
       <style jsx>{`
         .page-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100vh;
-          background-color: #121212;
-          color: #fff;
-        }
-        .form-container {
-          width: 100%;
           max-width: 400px;
+          margin: auto;
           padding: 2rem;
-          border-radius: 8px;
-          background-color: #1e1e1e;
-          box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
-          text-align: center;
-        }
-        h1 {
-          font-size: 1.5rem;
+          background-color: #1a1a1a;
           color: #fff;
-          margin-bottom: 1.5rem;
+          border-radius: 10px;
+          box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
         }
-        .form-group {
-          display: flex;
-          flex-direction: column;
+
+        h1 {
+          text-align: center;
+          color: #fff;
+          font-size: 1.8rem;
           margin-bottom: 1rem;
         }
-        .form-group label {
+
+        .form-group {
+          margin-bottom: 1rem;
+        }
+
+        label {
+          display: block;
           font-size: 0.9rem;
-          margin-bottom: 0.5rem;
-          color: #a1a1a1;
-          text-align: left;
+          color: #aaa;
         }
-        .form-group input {
+
+        input {
+          width: 100%;
           padding: 0.75rem;
-          border-radius: 8px;
-          border: 1px solid #333;
-          background-color: #1e1e1e;
-          color: #fff;
-          font-size: 1rem;
-        }
-        .form-group input:focus {
-          outline: none;
-          border-color: #9b59b6;
-        }
-        .error {
-          color: #e74c3c;
           margin-top: 0.5rem;
+          background-color: #333;
+          border: 1px solid #555;
+          border-radius: 5px;
+          color: #fff;
         }
+
+        input:focus {
+          outline: none;
+          border-color: #8b5cf6;
+        }
+
         button {
           width: 100%;
           padding: 0.75rem;
+          margin-top: 1rem;
+          background-color: #8b5cf6;
           border: none;
-          border-radius: 8px;
-          background-color: #9b59b6;
           color: #fff;
           font-size: 1rem;
+          font-weight: bold;
+          border-radius: 5px;
           cursor: pointer;
-          transition: background-color 0.3s ease;
-          margin-top: 1rem;
+          transition: background 0.3s ease;
         }
+
         button:hover {
-          background-color: #8e44ad;
+          background-color: #7c3aed;
         }
-        .register-link {
+
+        .login-link {
+          text-align: center;
           margin-top: 1rem;
-          font-size: 0.9rem;
-          color: #a1a1a1;
+          color: #aaa;
         }
-        .register-link a {
-          color: #9b59b6;
-          text-decoration: none;
-        }
-        .register-link a:hover {
+
+        .login-link a {
+          color: #8b5cf6;
           text-decoration: underline;
+        }
+
+        .error-message {
+          color: #f87171;
+          text-align: center;
+          margin-top: 1rem;
         }
       `}</style>
     </div>
-  )
+  );
 }

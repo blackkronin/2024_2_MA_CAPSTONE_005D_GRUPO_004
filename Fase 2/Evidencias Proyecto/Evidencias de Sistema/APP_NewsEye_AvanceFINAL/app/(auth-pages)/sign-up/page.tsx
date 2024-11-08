@@ -158,65 +158,92 @@ const SignUp = () => {
             <label>
               <input
                 type="checkbox"
-                value="deportes"
-                checked={interests.includes("deportes")}
+                value="CLIMA"
+                checked={interests.includes("CLIMA")}
                 onChange={handleInterestChange}
               />
-              Deportes
+              CLIMA
             </label>
             <label>
               <input
                 type="checkbox"
-                value="ciencia"
-                checked={interests.includes("ciencia")}
+                value="DEPORTES"
+                checked={interests.includes("DEPORTES")}
                 onChange={handleInterestChange}
               />
-              Ciencia
+              DEPORTES
             </label>
             <label>
               <input
                 type="checkbox"
-                value="tecnologia"
-                checked={interests.includes("tecnologia")}
+                value="FARANDULA"
+                checked={interests.includes("FARANDULA")}
                 onChange={handleInterestChange}
               />
-              Tecnología
+              FARANDULA
             </label>
             <label>
               <input
                 type="checkbox"
-                value="salud"
-                checked={interests.includes("salud")}
+                value="EMERGENCIA"
+                checked={interests.includes("EMERGENCIA")}
                 onChange={handleInterestChange}
               />
-              Salud
+              EMERGENCIA
             </label>
             <label>
               <input
                 type="checkbox"
-                value="entretenimiento"
-                checked={interests.includes("entretenimiento")}
+                value="SALUD"
+                checked={interests.includes("SALUD")}
                 onChange={handleInterestChange}
               />
-              Entretenimiento
+              SALUD
             </label>
             <label>
               <input
                 type="checkbox"
-                value="negocios"
-                checked={interests.includes("negocios")}
+                value="POLITICA"
+                checked={interests.includes("POLITICA")}
                 onChange={handleInterestChange}
               />
-              Negocios
+              POLITICA
             </label>
             <label>
               <input
                 type="checkbox"
-                value="general"
-                checked={interests.includes("general")}
+                value="TECNOLOGIA"
+                checked={interests.includes("TECNOLOGIA")}
                 onChange={handleInterestChange}
               />
-              General
+              TECNOLOGIA
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                value="ECONOMIA"
+                checked={interests.includes("ECONOMIA")}
+                onChange={handleInterestChange}
+              />
+              ECONOMIA
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                value="CIENCIA"
+                checked={interests.includes("CIENCIA")}
+                onChange={handleInterestChange}
+              />
+              CIENCIA
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                value="GENERAL"
+                checked={interests.includes("GENERAL")}
+                onChange={handleInterestChange}
+              />
+              GENERAL
             </label>
           </div>
         </div>
