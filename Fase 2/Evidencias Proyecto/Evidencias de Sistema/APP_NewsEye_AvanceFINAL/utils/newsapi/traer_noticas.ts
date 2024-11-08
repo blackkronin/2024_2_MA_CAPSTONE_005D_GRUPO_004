@@ -24,33 +24,17 @@ export const traerNoticias = async (
     country: string = '',
     page: number = 1
 ): Promise<NewsApiResponse> => {
-    const url = new URL('https://newsapi.org/v2/top-headlines');
-    url.searchParams.append('apiKey', apiKey);
-    if (country) url.searchParams.append('country', country);
-    url.searchParams.append('page', page.toString());
+    try {
+        const response = await fetch(`/api/news?apiKey=${apiKey}&country=${country}&page=${page}`);
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-        throw new Error(`Error fetching news: ${response.statusText}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching news: ${response.statusText}`);
+        }
+
+        const data: NewsApiResponse = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        throw error;
     }
-
-    const data: NewsApiResponse = await response.json();
-    if (data.status !== 'ok') {
-        throw new Error(`Error fetching news: ${data.status}`);
-    }
-
-    // Filtrar artículos que contienen "[Removed]" en sus campos
-    const filteredArticles = data.articles.filter((article: Article) => {
-        return !(
-            article.title?.includes('[Removed]') ||
-            article.description?.includes('[Removed]') ||
-            article.url?.includes('[Removed]') ||
-            article.urlToImage?.includes('[Removed]')
-        );
-    });
-
-    return {
-        ...data,
-        articles: filteredArticles,
-    };
 };
