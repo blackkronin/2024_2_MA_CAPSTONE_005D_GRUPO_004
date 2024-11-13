@@ -1,40 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { generateReportStream } from '@/utils/reports_ai/openai_reporter';
+import React, { useState, useEffect} from 'react';
+import { generateDetailedReport } from '@/utils/reports_ai/openai_reporter'; // Prompt detallado
 import { searchArticles } from '@/utils/reports_ai/tavily_scraper';
+import { downloadPDF } from '@/utils/reports_ai/PDFConverter'; 
 import ReactMarkdown from 'react-markdown';
-import { jsPDF } from 'jspdf';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OpenAI } from 'openai';
 import { supabase } from '@/utils/supabase/client';
+import remarkGfm from 'remark-gfm'; // Para compatibilidad con tablas y otros elementos de Markdown extendido
+import '@/app/globals.css' // Importa los estilos globales o específicos del componente
 import { User } from '@supabase/supabase-js';
+import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true,
 });
-
-const Tone = {
-  Objective: "Objetivo (presentación imparcial y sin sesgos de hechos y hallazgos)",
-  Formal: "Formal (se ajusta a los estándares académicos con un lenguaje y estructura sofisticados)",
-  Analytical: "Analítico (evaluación crítica y examen detallado de datos y teorías)",
-  Persuasive: "Persuasivo (convenciendo a la audiencia de un punto de vista o argumento particular)",
-  Informative: "Informativo (proporcionando información clara y completa sobre un tema)",
-  Explanatory: "Explicativo (aclaración de conceptos y procesos complejos)",
-  Descriptive: "Descriptivo (representación detallada de fenómenos, experimentos o estudios de caso)",
-  Critical: "Crítico (juzgando la validez y relevancia de la investigación y sus conclusiones)",
-  Comparative: "Comparativo (contrastando diferentes teorías, datos o métodos para resaltar diferencias y similitudes)",
-  Speculative: "Especulativo (explorando hipótesis y posibles implicaciones o direcciones de investigación futura)",
-  Reflective: "Reflexivo (considerando el proceso de investigación y las perspectivas o experiencias personales)",
-  Narrative: "Narrativo (contando una historia para ilustrar hallazgos o metodologías de investigación)",
-  Humorous: "Humorístico (ligero y entretenido, generalmente para hacer el contenido más relatable)",
-  Optimistic: "Optimista (resaltando hallazgos positivos y posibles beneficios)",
-  Pessimistic: "Pesimista (enfocándose en limitaciones, desafíos o resultados negativos)",
-};
 
 const OpenAIReportGen: React.FC = () => {
   const [report, setReport] = useState<string>('');
@@ -44,14 +24,17 @@ const OpenAIReportGen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
   const [streamedContent, setStreamedContent] = useState('');
+  const [articleTitles, setArticleTitles] = useState<string[]>([]); // Para almacenar títulos de artículos
+  const [user, setUser] = useState<User | null>(null); // Datos del usuario actual
   const [category, setCategory] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [user, setUser] = useState<User | null>(null);
+  const [reportTitle, setReportTitle] = useState(''); // Título del informe
+
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      console.log(user);
     };
 
     fetchUser();
@@ -67,16 +50,22 @@ const OpenAIReportGen: React.FC = () => {
     setLoading(true);
     setError(null);
     setMessages([]);
+    setArticleTitles([]);
     setStreamedContent('');
+
     try {
-      
-      setMessages(prev => [...prev, "Iniciando la búsqueda de artículos..."]);
+      setMessages((prev) => [...prev, "Iniciando la búsqueda de artículos..."]);
       const articles = await searchArticles(prompt);
-      setMessages(prev => [...prev, `Búsqueda completada. Artículos encontrados: ${articles.length}`]);
-      articles.forEach(article => {
-        setMessages(prev => [...prev, `Título del artículo: ${article.title}`]);
-      });
-      const stream = await generateReportStream(articles, prompt, tone);
+      
+      if (articles.length === 0) {
+        setMessages((prev) => [...prev, "No se encontraron artículos."]);
+        return;
+      }
+
+      setMessages((prev) => [...prev, `Artículos encontrados: ${articles.length}`]);
+      setArticleTitles(articles.map(article => article.title)); // Guarda los títulos de los artículos
+
+      const stream = await generateDetailedReport(articles, prompt, tone);
 
       const reader = stream.getReader();
       const decoder = new TextDecoder();
@@ -86,12 +75,12 @@ const OpenAIReportGen: React.FC = () => {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunkValue = decoder.decode(value);
-        setStreamedContent(prev => prev + chunkValue);
+        setStreamedContent((prev) => prev + chunkValue);
       }
 
       const reportContent = streamedContent;
       setReport(reportContent);
-
+      
       const categoryResponse = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
@@ -105,7 +94,7 @@ const OpenAIReportGen: React.FC = () => {
 
       const category = categoryResponse.choices[0]?.message?.content?.trim() || 'Uncategorized';
       setCategory(category);
-
+      // Genera el título del informe usando el prompt original
       const titleResponse = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
@@ -118,18 +107,21 @@ const OpenAIReportGen: React.FC = () => {
       });
 
       const title = titleResponse.choices[0]?.message?.content?.trim() || 'Untitled Report';
-      setTitle(title);
+      setReportTitle(title);
 
-      await handleNewReport(reportContent, category, title);
+      await saveReportToSupabase(reportContent, category, title);
     } catch (error) {
-      console.error("Error generating report:", error);
-      setError("Error generating report. Please try again.");
+      console.error("Error generando el reporte:", error);
+      setError("Error generando el reporte. Intente de nuevo.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNewReport = async (reportContent: string, category: string, title: string) => {
+
+
+
+  const saveReportToSupabase = async (reportContent: string, category: string, title: string) => {
     if (user) {
       const folderName = `reports_user_${user.id}`;
       const date = new Date().toISOString().split('T')[0];
@@ -147,132 +139,69 @@ const OpenAIReportGen: React.FC = () => {
     }
   };
 
-  const downloadReport = ({ report }: { report: string }) => {
-    const doc = new jsPDF();
-    const lines = report.split('\n');
-    let y = 10;
-    const index: { title: string; page: number }[] = [];
-    let title = "Reporte Generado";
-
-    // Extract title from the first heading
-    if (lines.length > 0 && lines[0].startsWith('# ')) {
-      title = lines[0].substring(2);
-      lines.shift(); // Remove the title line from the content
-    }
-
-    // Add title
-    doc.setFontSize(20);
-    doc.text(title, 10, y);
-    y += 20;
-
-    // Add index placeholder
-    doc.addPage();
-    const indexStartY = 10;
-    y = indexStartY + 20;
-
-    lines.forEach((line) => {
-      if (line.startsWith('# ')) {
-        doc.setFontSize(16);
-        doc.text(line.substring(2), 10, y);
-        index.push({ title: line.substring(2), page: doc.getNumberOfPages() });
-        y += 10;
-      } else if (line.startsWith('## ')) {
-        doc.setFontSize(14);
-        doc.text(line.substring(3), 10, y);
-        index.push({ title: line.substring(3), page: doc.getNumberOfPages() });
-        y += 10;
-      } else if (line.startsWith('### ')) {
-        doc.setFontSize(12);
-        doc.text(line.substring(4), 10, y);
-        y += 10;
-      } else {
-        doc.setFontSize(10);
-        const splitText = doc.splitTextToSize(line, 180);
-        splitText.forEach((textLine: string) => {
-          doc.text(textLine, 10, y);
-          y += 10;
-          if (y > 280) {
-            doc.addPage();
-            y = 10;
-          }
-        });
-      }
-
-      if (y > 280) {
-        doc.addPage();
-        y = 10;
-      }
-    });
-
-    // Add index
-    doc.setPage(2);
-    doc.setFontSize(16);
-    doc.text("Índice", 10, indexStartY);
-    let indexY = indexStartY + 10;
-    index.forEach((item) => {
-      doc.setFontSize(12);
-      doc.text(`${item.title} ................................ ${item.page}`, 10, indexY);
-      indexY += 10;
-    });
-
-    doc.save('report.pdf');
-  };
-
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Generador de Reportes IA</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ingrese su solicitud aquí..."
-          className="w-full"
-        />
-        <Select value={tone} onValueChange={setTone}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Seleccione el tono" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(Tone).map(([key, value]) => (
-              <SelectItem key={key} value={key}>{value}</SelectItem>
+    <div className="w-full max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold">Generador de Reportes IA</h2>
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Ingrese su consulta aquí..."
+        className="w-full mt-4 p-2 border rounded"
+      />
+      <select value={tone} onChange={(e) => setTone(e.target.value)} className="w-full mt-4 p-2 border rounded">
+        <option value="Objective">Objetivo</option>
+        <option value="Formal">Formal</option>
+        <option value="Analytical">Analítico</option>
+        <option value="Informative">Informativo</option>
+        {/* Más opciones de tono */}
+      </select>
+      <button onClick={handleGenerateReport} disabled={loading} className="w-full mt-4 p-2 bg-blue-500 text-white rounded">
+        {loading ? "Generando..." : "Generar Reporte"}
+      </button>
+
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+
+      <div className="mt-4">
+        {messages.map((msg, index) => (
+          <p key={index} className="text-blue-500">{msg}</p>
+        ))}
+      </div>
+
+      {articleTitles.length > 0 && (
+        <div className="mt-4 p-4 border rounded bg-gray-100">
+          <h3 className="font-bold mb-2">Artículos Encontrados:</h3>
+          <ul className="list-disc pl-6">
+            {articleTitles.map((title, index) => (
+              <li key={index}>{title}</li>
             ))}
-          </SelectContent>
-        </Select>
-        <Button onClick={handleGenerateReport} disabled={loading} className="w-full">
-          {loading ? "Generando..." : "Generar Reporte"}
-        </Button>
-        {error && <p className="text-red-500">{error}</p>}
-        <div className="space-y-2">
-          {messages.map((msg, index) => (
-            <Card key={index}>
-              <CardContent>
-                <pre className="whitespace-pre-wrap break-words text-blue-500">{msg}</pre>
-              </CardContent>
-            </Card>
-          ))}
+          </ul>
         </div>
-        {streamedContent && (
-          <Card>
-            <CardContent>
-              <ReactMarkdown>{streamedContent}</ReactMarkdown>
-            </CardContent>
-          </Card>
-        )}
-        {report && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Reporte Generado</h2>
-            <ReactMarkdown>{report}</ReactMarkdown>
-            <div className="flex justify-between">
-              <Button onClick={() => downloadReport({ report })}>Descargar Reporte</Button>
-              {category && <p className="text-sm text-gray-500">Categoría: {category}</p>}
-            </div>
+      )}
+
+      {streamedContent && (
+          <>
+          <div  className="report-container mt-4 p-4 bg-white rounded-md">
+            <ReactMarkdown
+              children={streamedContent}
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ node, ...props }) => <h1 className="report-title" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="report-heading" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="report-subheading" {...props} />,
+                p: ({ node, ...props }) => <p className="report-paragraph" {...props} />,
+                a: ({ node, ...props }) => <a className="report-citation" {...props} />,
+                ul: ({ node, ...props }) => <ul className="report-references" {...props} />,
+              }}
+            />
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <button onClick={() => downloadPDF(streamedContent)} className="download-pdf-button mt-4">
+            Descargar PDF
+          </button>
+        </>
+      )}
+    </div>
   );
 };
+
 
 export default OpenAIReportGen;

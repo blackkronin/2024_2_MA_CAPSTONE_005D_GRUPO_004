@@ -4,11 +4,27 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { calculateAge } from '@/utils/calculateAge';
+import { Toaster, toast } from 'react-hot-toast';
+import { categorizeUser } from '@/utils/categorizeUser';
+
+const toastOptions = {
+  duration: 10000,
+  style: {
+    background: '#333',
+    color: '#fff',
+    padding: '16px',
+    borderRadius: '8px',
+    fontSize: '16px',
+    zIndex: 9999,
+  },
+} as const;
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState('');
   const router = useRouter();
 
   const getSession = async () => {
@@ -34,18 +50,47 @@ export default function SignIn() {
 
       if (error) {
         setError(error.message);
-      } else if (data.user) {
+        return;
+      }
+
+      if (data.user) {
+        const { full_name, birth_date, studies } = data.user.user_metadata;
+        const age = calculateAge(birth_date);
+        const userInfo = {
+          age,
+          occupation: studies
+        };
+        
+        const categoria = categorizeUser(userInfo);
+
+        toast.success(
+          `¡Bienvenido ${full_name}! Tu categoría es: ${categoria}`,
+          {
+            ...toastOptions,
+            position: 'top-center',
+            duration: 10000,
+          }
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         router.push('/');
         router.refresh();
       }
     } catch (err) {
-      setError('Error inesperado durante el inicio de sesión');
       console.error(err);
+      setError('Error inesperado durante el inicio de sesión');
     }
   };
 
   return (
-    <div className="page-container">
+    <div>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: toastOptions.style
+        }}
+      />
       <form onSubmit={handleSignIn} className="form">
         <h1>Inicio de Sesión</h1>
         <div className="form-group">

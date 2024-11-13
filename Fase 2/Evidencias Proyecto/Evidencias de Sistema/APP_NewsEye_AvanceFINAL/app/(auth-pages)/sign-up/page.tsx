@@ -1,9 +1,11 @@
 "use client";
-
+import { calculateAge } from '@/utils/calculateAge';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../../utils/supabase/client';
+import { categorizeUser } from '@/utils/categorizeUser';
+
 
 const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -37,9 +39,11 @@ const SignUp = () => {
       data: {
         full_name: string;
         birth_date: string;
+        age: number;
         studies: string;
         interests: string;
         avatar_url: string;
+        user_category: string;
       };
     };
   }
@@ -54,6 +58,12 @@ const SignUp = () => {
 
     setError('');
 
+    const age = calculateAge(birthDate);
+    const userCategory = categorizeUser({
+      age,
+      occupation: studies
+    });
+
     const signUpData: SignUpData = {
       email,
       password,
@@ -62,9 +72,11 @@ const SignUp = () => {
         data: {
           full_name: name,
           birth_date: birthDate,
+          age: age,
           studies: studies,
-          interests: interests.join(','), // Convertimos el array a una cadena de texto separada por comas
+          interests: interests.join(','),
           avatar_url: avatarUrl,
+          user_category: userCategory,
         },
       },
     };
@@ -77,7 +89,7 @@ const SignUp = () => {
       return;
     }
 
-    setNotification(`Hola ${name}, te has registrado exitosamente. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
+    setNotification(`Hola ${name}, te has registrado exitosamente como ${userCategory}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
 
     setTimeout(() => {
       router.push('/sign-in');
@@ -85,7 +97,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="page-container">
+    <div>
       <h1>Registro de Usuario</h1>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -139,17 +151,18 @@ const SignUp = () => {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="studies">Nivel de Estudios:</label>
+          <label htmlFor="currentStatus">Ocupación Actual:</label>
           <select
-            id="studies"
+            id="currentStatus"
             value={studies}
             onChange={(e) => setStudies(e.target.value)}
             required
           >
             <option value="">Seleccione...</option>
-            <option value="profesionales">Estudios Profesionales</option>
-            <option value="básicos">Estudios Básicos</option>
-            <option value="cursando">Cursando</option>
+            <option value="estudiante">Estudiante</option>
+            <option value="trabajando">Trabajando</option>
+            <option value="retirado">Retirado</option>
+            <option value="no_responde">Prefiero no responder</option>
           </select>
         </div>
         <div className="form-group">
