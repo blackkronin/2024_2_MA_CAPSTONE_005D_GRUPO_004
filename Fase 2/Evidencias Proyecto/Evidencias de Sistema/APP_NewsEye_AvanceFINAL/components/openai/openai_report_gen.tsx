@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect} from 'react';
-import { generateDetailedReport } from '@/utils/reports_ai/openai_reporter'; // Prompt detallado
+import React, { useState, useEffect } from 'react';
+import { generarCommonUserReport, generarCommonUserYoungReport, generarProfessionalAdultReport, generarStudentAdultReport, generarStudentUniversityReport, generarThirdAgeReport } from '@/utils/reports_ai/openai_reporter';
+import { categorizeUser } from '@/utils/categorizeUser';
 import { searchArticles } from '@/utils/reports_ai/tavily_scraper';
-import { downloadPDF } from '@/utils/reports_ai/PDFConverter'; 
+import { downloadPDF } from '@/utils/reports_ai/PDFConverter';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/utils/supabase/client';
-import remarkGfm from 'remark-gfm'; // Para compatibilidad con tablas y otros elementos de Markdown extendido
-import '@/app/globals.css' // Importa los estilos globales o específicos del componente
+import remarkGfm from 'remark-gfm';
+import '@/app/globals.css';
 import { User } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
 
@@ -18,17 +19,15 @@ const openai = new OpenAI({
 
 const OpenAIReportGen: React.FC = () => {
   const [report, setReport] = useState<string>('');
-  const [tone, setTone] = useState('Objective');
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
   const [streamedContent, setStreamedContent] = useState('');
-  const [articleTitles, setArticleTitles] = useState<string[]>([]); // Para almacenar títulos de artículos
-  const [user, setUser] = useState<User | null>(null); // Datos del usuario actual
+  const [articleTitles, setArticleTitles] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [category, setCategory] = useState<string>('');
-  const [reportTitle, setReportTitle] = useState(''); // Título del informe
-
+  const [reportTitle, setReportTitle] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -63,22 +62,47 @@ const OpenAIReportGen: React.FC = () => {
       }
 
       setMessages((prev) => [...prev, `Artículos encontrados: ${articles.length}`]);
-      setArticleTitles(articles.map(article => article.title)); // Guarda los títulos de los artículos
+      setArticleTitles(articles.map(article => article.title));
 
-      const stream = await generateDetailedReport(articles, prompt, tone);
+      let stream;
+      const userCategory = categorizeUser({ age: user?.user_metadata.age, occupation: user?.user_metadata.occupation });
 
+      switch (userCategory) {
+        case 'Estudiante Joven':
+          stream = await generarStudentUniversityReport(articles, prompt, "Crítico (juzgando la validez y relevancia de la investigación y sus conclusiones)");
+          break;
+        case 'Estudiante Adulto':
+          stream = await generarStudentAdultReport(articles, prompt, "Formal (se ajusta a los estándares académicos con un lenguaje y estructura sofisticados)");
+          break;
+        case 'Joven':
+          stream = await generarCommonUserYoungReport(articles, prompt, "Informativo (proporcionando información clara y completa sobre un tema)");
+          break;
+        case 'Joven Adulto':
+          stream = await generarCommonUserReport(articles, prompt, "Objetivo (presentación imparcial y sin sesgos de hechos y hallazgos)");
+          break;
+        case 'Adulto':
+          stream = await generarProfessionalAdultReport(articles, prompt, "Analítico (evaluación crítica y examen detallado de datos y teorías)");
+          break;
+        case 'Adulto Mayor':
+          stream = await generarThirdAgeReport(articles, prompt, "Descriptivo (representación detallada de fenómenos, experimentos o estudios de caso)");
+          break;
+        default:
+          stream = await generarCommonUserReport(articles, prompt, "Objetivo (presentación imparcial y sin sesgos de hechos y hallazgos)");
+      }
+      console.log(userCategory);
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       let done = false;
+      let reportContent = '';
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunkValue = decoder.decode(value);
+        reportContent += chunkValue;
         setStreamedContent((prev) => prev + chunkValue);
       }
 
-      const reportContent = streamedContent;
       setReport(reportContent);
       
       const categoryResponse = await openai.chat.completions.create({
@@ -118,15 +142,32 @@ const OpenAIReportGen: React.FC = () => {
     }
   };
 
-
-
-
   const saveReportToSupabase = async (reportContent: string, category: string, title: string) => {
     if (user) {
       const folderName = `reports_user_${user.id}`;
       const date = new Date().toISOString().split('T')[0];
-      const fileName = `${category}/${date}_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+      const sanitizedCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const fileName = `${sanitizedCategory}/${date}_${sanitizedTitle}.md`;
 
+      // Verificar si la carpeta existe
+      const { data: folderData, error: folderError } = await supabase.storage
+        .from('AllReports')
+        .list(folderName);
+
+      if (folderError || !folderData || folderData.length === 0) {
+        // Crear la carpeta si no existe
+        const { error: createFolderError } = await supabase.storage
+          .from('AllReports')
+          .upload(`${folderName}/.keep`, new Blob(['']));
+
+        if (createFolderError) {
+          console.error('Error creating folder:', createFolderError);
+          return;
+        }
+      }
+
+      // Subir el archivo a la carpeta
       const { error } = await supabase.storage
         .from('AllReports')
         .upload(`${folderName}/${fileName}`, reportContent);
@@ -148,13 +189,6 @@ const OpenAIReportGen: React.FC = () => {
         placeholder="Ingrese su consulta aquí..."
         className="w-full mt-4 p-2 border rounded"
       />
-      <select value={tone} onChange={(e) => setTone(e.target.value)} className="w-full mt-4 p-2 border rounded">
-        <option value="Objective">Objetivo</option>
-        <option value="Formal">Formal</option>
-        <option value="Analytical">Analítico</option>
-        <option value="Informative">Informativo</option>
-        {/* Más opciones de tono */}
-      </select>
       <button onClick={handleGenerateReport} disabled={loading} className="w-full mt-4 p-2 bg-blue-500 text-white rounded">
         {loading ? "Generando..." : "Generar Reporte"}
       </button>
@@ -202,6 +236,5 @@ const OpenAIReportGen: React.FC = () => {
     </div>
   );
 };
-
 
 export default OpenAIReportGen;

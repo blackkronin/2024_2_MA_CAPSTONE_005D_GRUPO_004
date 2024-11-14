@@ -12,7 +12,7 @@ export function categorizeUser({ age, occupation }: UserData): string {
     if (age < 18) return 'Estudiante Joven';
     if (age < 25) return 'Estudiante Universitario';
     return 'Estudiante Adulto';
-  }
+  } 
 
   // Categorías por edad si no es estudiante
   if (age < 18) return 'Joven';

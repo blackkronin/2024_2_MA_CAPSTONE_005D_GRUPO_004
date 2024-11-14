@@ -26,9 +26,12 @@ const Tone = {
   Informative: "Informativo (proporcionando información clara y completa sobre un tema)",
   Descriptive: "Descriptivo (representación detallada de fenómenos, experimentos o estudios de caso)",
   Critical: "Crítico (juzgando la validez y relevancia de la investigación y sus conclusiones)",
-//Usuario Estudiante: Formal y Critico
-//Usuario Comun: Objetivo e Informativo
-//Usuario Prifesional: Analitico y Descriptivo
+//Usuario Estudiante Joven: Critico
+//Usuario Estudiante Adulto: Formal
+//Usuario Comun: Objetivo
+//Usuario Comun Joven: Informativo
+//Usuario Profesional: Analitico
+//Usuario Mayor: Descriptivo
 };
 
 const OpenAIReportGen: React.FC = () => {
