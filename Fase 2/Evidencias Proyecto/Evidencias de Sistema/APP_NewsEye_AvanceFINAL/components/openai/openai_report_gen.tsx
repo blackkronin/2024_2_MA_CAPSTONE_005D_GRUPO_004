@@ -39,11 +39,11 @@ const OpenAIReportGen: React.FC = () => {
     fetchUser();
   }, []);
 
-  useEffect(() => {
-    if (report) {
-      setStreamedContent('');
-    }
-  }, [report]);
+  // useEffect(() => {
+  //   if (report) {
+  //     setStreamedContent('');
+  //   }
+  // }, [report]);
 
   const handleGenerateReport = async () => {
     setLoading(true);

@@ -38,6 +38,7 @@ export default function RootLayout({
                   <div className="flex gap-5 items-center font-semibold">
                     <Link href={"/"}>Inicio</Link>
                     <Link href={"AIReporter"}>HuemulAI</Link>
+                    <Link href={"Profile"}>Perfil</Link>
                   </div>
                   {!hasEnvVars ? <EnvVarWarning /> : <HeaderAuth />}
                 </div>

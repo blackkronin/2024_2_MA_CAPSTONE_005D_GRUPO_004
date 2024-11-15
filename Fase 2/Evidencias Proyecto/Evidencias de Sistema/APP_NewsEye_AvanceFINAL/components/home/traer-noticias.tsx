@@ -4,12 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { traerNoticias, Article } from '@/utils/newsapi/traer_noticas';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Modal from './modalAPI';
 
 const TraerNoticias = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+/* parametros de pop up */
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', content: '' });
+
+  const openModal = (title:any, content:any) => {
+    setModalContent({ title, content });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,9 +75,9 @@ const TraerNoticias = () => {
                 <CardDescription>{article.description}</CardDescription>
               </CardContent>
               <CardFooter>
-                <a href={article.url} target="_blank" rel="noopener noreferrer" className="button">
-                  Read more
-                </a>
+                <Button onClick={() => openModal(article.title, article.description)}>
+                  Ver más
+                </Button>
               </CardFooter>
             </Card>
           )
@@ -73,6 +87,13 @@ const TraerNoticias = () => {
         <Button onClick={handlePreviousPage} disabled={page === 1}>← Previous</Button>
         <Button onClick={handleNextPage}>Next →</Button>
       </div>
+      
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        title={modalContent.title} 
+        content={modalContent.content} 
+      />
     </div>
   );
 };

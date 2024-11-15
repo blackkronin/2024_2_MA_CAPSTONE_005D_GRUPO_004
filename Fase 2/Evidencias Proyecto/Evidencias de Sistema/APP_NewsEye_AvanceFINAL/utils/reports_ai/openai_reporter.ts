@@ -250,7 +250,7 @@ export async function generarThirdAgeReport(articles: Article[], query: string,t
     - No debe superar las 1500 palabras o el limite permitido por tu modelo.
 
     Instrucciones adicionales:
-    - Como está pensado para un público adulto mayor, evita tecnicismos y términos complejos.
+    - La generación de este informe está pensado para un público adulto mayor, evita tecnicismos y términos complejos.
     - Usa fuentes confiables y actuales, priorizando relevancia.
     - Cada URL debe estar hipervinculada: [url website](url).
     - Fecha actual: ${new Date().toISOString().split("T")[0]}.
@@ -320,6 +320,8 @@ export async function generarCommonUserReport(articles: Article[], query: string
     - No debe superar las 1500 palabras o el limite permitido por tu modelo.
 
     Instrucciones adicionales:
+    - Enumera los encabezados por orden de índice según la estructura del informe ej: 1. Portada, 2. Índice, 3. Resumen.
+    - Enumera los encabezados en el índice según la estructura del informe.
     - Usa fuentes confiables y actuales, priorizando relevancia.
     - Cada URL debe estar hipervinculada: [url website](url).
     - Fecha actual: ${new Date().toISOString().split("T")[0]}.
