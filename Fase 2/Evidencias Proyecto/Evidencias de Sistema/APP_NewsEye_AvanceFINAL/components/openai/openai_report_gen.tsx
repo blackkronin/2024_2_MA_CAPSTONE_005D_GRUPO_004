@@ -1,32 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { generarCommonUserReport, generarCommonUserYoungReport, generarProfessionalAdultReport, generarStudentAdultReport, generarStudentUniversityReport, generarThirdAgeReport } from '@/utils/reports_ai/openai_reporter';
-import { categorizeUser } from '@/utils/categorizeUser';
-import { searchArticles } from '@/utils/reports_ai/tavily_scraper';
-import { downloadPDF } from '@/utils/reports_ai/PDFConverter';
-import ReactMarkdown from 'react-markdown';
-import { supabase } from '@/utils/supabase/client';
-import remarkGfm from 'remark-gfm';
-import '@/app/globals.css';
-import { User } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { fetchUserCategories, generateDynamicPrompt, selectedTopic, getConfigForUser, ConfigurationsType } from "@/utils/reports_ai/prompts_reporter";
+import { searchArticles } from "@/utils/reports_ai/tavily_scraper";
+import { downloadPDF } from "@/utils/reports_ai/PDFConverter";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import "@/app/globals.css";
+import { OpenAI } from "openai";
+import { User } from "@supabase/supabase-js";
 
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true,
 });
 
-const OpenAIReportGen: React.FC = () => {
+const OpenAIReportGen: React.FC = ({}) => {
   const [report, setReport] = useState<string>('');
+  const [user, setUser] = useState<User | null>(null);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<string[]>([]);
   const [streamedContent, setStreamedContent] = useState('');
   const [articleTitles, setArticleTitles] = useState<string[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [category, setCategory] = useState<string>('');
+  const [category, setCategory] = useState<string>(selectedTopic);
   const [reportTitle, setReportTitle] = useState('');
 
   useEffect(() => {
@@ -39,143 +38,118 @@ const OpenAIReportGen: React.FC = () => {
     fetchUser();
   }, []);
 
-  // useEffect(() => {
-  //   if (report) {
-  //     setStreamedContent('');
-  //   }
-  // }, [report]);
-
   const handleGenerateReport = async () => {
-    setLoading(true);
-    setError(null);
-    setMessages([]);
-    setArticleTitles([]);
-    setStreamedContent('');
+    if (user) {
+      setLoading(true);
+      setError(null);
+      setMessages([]);
+      setArticleTitles([]);
+      setStreamedContent('');
 
-    try {
-      setMessages((prev) => [...prev, "Iniciando la búsqueda de artículos..."]);
-      const articles = await searchArticles(prompt);
-      
-      if (articles.length === 0) {
-        setMessages((prev) => [...prev, "No se encontraron artículos."]);
-        return;
+      try {
+        const { primaryCategory, secondaryCategory } = await fetchUserCategories(user.id);
+
+        setMessages((prev) => [...prev, "Iniciando la búsqueda de artículos..."]);
+        const articles = await searchArticles(prompt);
+
+        if (articles.length === 0) {
+          setMessages((prev) => [...prev, "No se encontraron artículos."]);
+          return;
+        }
+
+        setMessages((prev) => [...prev, `Artículos encontrados: ${articles.length}`]);
+        setArticleTitles(articles.map((article) => article.title));
+
+        const userInfo = `Nombre: ${user.user_metadata.full_name}`;
+        const dynamicPrompt = generateDynamicPrompt(userInfo, articles, prompt, primaryCategory, secondaryCategory);
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: dynamicPrompt }],
+          stream: true,
+        });
+
+        let reportContent = "";
+        for await (const chunk of response) {
+          const delta = chunk.choices[0]?.delta?.content || "";
+          reportContent += delta;
+          setStreamedContent((prev) => prev + delta);
+        }
+
+        setReport(reportContent);
+
+        const summaryResponse = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "user",
+              content: `Genera un resumen breve siguiente contenido:\n\n${reportContent}`,
+            },
+          ],
+          max_tokens: 150,
+        });
+
+        const summary = summaryResponse.choices[0]?.message?.content?.trim() || "No summary available";
+
+        const category = selectedTopic;
+        setCategory(category);
+
+        const show_title = `Reporte de ${category}`;
+        setReportTitle(show_title);
+
+        await saveReportToSupabase(reportContent, category, show_title, summary, primaryCategory, secondaryCategory);
+      } catch (error) {
+        console.error("Error generando el reporte:", error);
+        setError("Error generando el reporte. Intente de nuevo.");
+      } finally {
+        setLoading(false);
       }
-
-      setMessages((prev) => [...prev, `Artículos encontrados: ${articles.length}`]);
-      setArticleTitles(articles.map(article => article.title));
-
-      let stream;
-      const userCategory = categorizeUser({ age: user?.user_metadata.age, occupation: user?.user_metadata.occupation });
-
-      switch (userCategory) {
-        case 'Estudiante Joven':
-          stream = await generarStudentUniversityReport(articles, prompt, "Crítico (juzgando la validez y relevancia de la investigación y sus conclusiones)");
-          break;
-        case 'Estudiante Adulto':
-          stream = await generarStudentAdultReport(articles, prompt, "Formal (se ajusta a los estándares académicos con un lenguaje y estructura sofisticados)");
-          break;
-        case 'Joven':
-          stream = await generarCommonUserYoungReport(articles, prompt, "Informativo (proporcionando información clara y completa sobre un tema)");
-          break;
-        case 'Joven Adulto':
-          stream = await generarCommonUserReport(articles, prompt, "Objetivo (presentación imparcial y sin sesgos de hechos y hallazgos)");
-          break;
-        case 'Adulto':
-          stream = await generarProfessionalAdultReport(articles, prompt, "Analítico (evaluación crítica y examen detallado de datos y teorías)");
-          break;
-        case 'Adulto Mayor':
-          stream = await generarThirdAgeReport(articles, prompt, "Descriptivo (representación detallada de fenómenos, experimentos o estudios de caso)");
-          break;
-        default:
-          stream = await generarCommonUserReport(articles, prompt, "Objetivo (presentación imparcial y sin sesgos de hechos y hallazgos)");
-      }
-      console.log(userCategory);
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let reportContent = '';
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunkValue = decoder.decode(value);
-        reportContent += chunkValue;
-        setStreamedContent((prev) => prev + chunkValue);
-      }
-
-      setReport(reportContent);
-      
-      const categoryResponse = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'user',
-            content: `Categoriza el siguiente contenido en una de las siguientes categorías, debes procurar utilizar UNA sola palabra: Salud, Humor, Historia, Noticia, etc.:\n\n${reportContent}`,
-          },
-        ],
-        max_tokens: 50,
-      });
-
-      const category = categoryResponse.choices[0]?.message?.content?.trim() || 'Uncategorized';
-      setCategory(category);
-      // Genera el título del informe usando el prompt original
-      const titleResponse = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'user',
-            content: `Genera un título corto y descriptivo para el siguiente reporte:\n\n${reportContent}`,
-          },
-        ],
-        max_tokens: 50,
-      });
-
-      const title = titleResponse.choices[0]?.message?.content?.trim() || 'Untitled Report';
-      setReportTitle(title);
-
-      await saveReportToSupabase(reportContent, category, title);
-    } catch (error) {
-      console.error("Error generando el reporte:", error);
-      setError("Error generando el reporte. Intente de nuevo.");
-    } finally {
-      setLoading(false);
     }
   };
 
-  const saveReportToSupabase = async (reportContent: string, category: string, title: string) => {
+  const sanitizeFileName = (name: string) => {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  };
+
+  const saveReportToSupabase = async (reportContent: string, category: string, title: string, summary: string, primaryCategory: keyof ConfigurationsType, secondaryCategory: string) => {
     if (user) {
       const folderName = `reports_user_${user.id}`;
-      const date = new Date().toISOString().split('T')[0];
-      const sanitizedCategory = category.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      const fileName = `${sanitizedCategory}/${date}_${sanitizedTitle}.md`;
+      const date = new Date().toISOString().split("T")[0];
+      const sanitizedCategory = sanitizeFileName(category);
+      const sanitizedTitle = sanitizeFileName(title);
+      const fileName = `${sanitizedCategory}/${date}_${sanitizedTitle}.json`;
 
-      // Verificar si la carpeta existe
-      const { data: folderData, error: folderError } = await supabase.storage
-        .from('AllReports')
-        .list(folderName);
+      const { data: folderData, error: folderError } = await supabase.storage.from("reportes.usuarios").list(folderName);
 
       if (folderError || !folderData || folderData.length === 0) {
-        // Crear la carpeta si no existe
-        const { error: createFolderError } = await supabase.storage
-          .from('AllReports')
-          .upload(`${folderName}/.keep`, new Blob(['']));
-
-        if (createFolderError) {
-          console.error('Error creating folder:', createFolderError);
-          return;
+        const subfolders = ["conocimiento", "profesion", "para_mi"];
+        for (const subfolder of subfolders) {
+          const { data: subfolderData, error: subfolderError } = await supabase.storage.from("reportes.usuarios").list(`${folderName}/${subfolder}`);
+          if (!subfolderData || subfolderData.length === 0) {
+            const { error: createFolderError } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${subfolder}/.keep`, new Blob([""]));
+            if (createFolderError) {
+              console.error('Error creating folder:', createFolderError);
+              return;
+            }
+          }
         }
       }
 
-      // Subir el archivo a la carpeta
-      const { error } = await supabase.storage
-        .from('AllReports')
-        .upload(`${folderName}/${fileName}`, reportContent);
+      const config = getConfigForUser(primaryCategory, secondaryCategory);
+      const reportJSON = {
+        title,
+        summary,
+        category,
+        date,
+        structure: config.structure,
+        content: reportContent,
+      };
 
+      const { error } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${fileName}`, JSON.stringify(reportJSON));
       if (error) {
-        console.error('Error saving report:', error);
+        console.error("Error saving report:", error);
       } else {
-        console.log('Report saved successfully');
+        console.log("Report saved successfully");
       }
     }
   };
@@ -213,13 +187,13 @@ const OpenAIReportGen: React.FC = () => {
       )}
 
       {streamedContent && (
-          <>
-          <div  className="report-container mt-4 p-4 bg-white rounded-md">
+        <>
+          <div className="report-container mt-4 p-4 bg-white rounded-md">
             <ReactMarkdown
               children={streamedContent}
               remarkPlugins={[remarkGfm]}
               components={{
-                h1: ({ node, ...props }) => <h1 className="report-title" {...props} />,
+                h1: ({ node, ...props }) => <h1 id='report-title' className="report-title" {...props} />,
                 h2: ({ node, ...props }) => <h2 className="report-heading" {...props} />,
                 h3: ({ node, ...props }) => <h3 className="report-subheading" {...props} />,
                 p: ({ node, ...props }) => <p className="report-paragraph" {...props} />,

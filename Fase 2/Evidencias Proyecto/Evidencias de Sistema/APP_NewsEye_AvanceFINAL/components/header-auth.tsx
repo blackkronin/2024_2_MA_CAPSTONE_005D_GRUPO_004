@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 const HeaderAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState("");
+  const [second_cat, setSecond_cat] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -18,12 +19,9 @@ const HeaderAuth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
-        const { data } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", session.user.id)
-          .single();
-        setUserName(data?.full_name || session.user.email);
+        const { user_metadata } = session.user;
+        setUserName(user_metadata.full_name || session.user.email);
+        setSecond_cat(user_metadata.second_cat || '');
       }
     };
 
@@ -31,6 +29,11 @@ const HeaderAuth = () => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user || null);
+      if (session?.user) {
+        const { user_metadata } = session.user;
+        setUserName(user_metadata.full_name || session.user.email);
+        setSecond_cat(user_metadata.second_cat || '');
+      }
     });
 
     return () => {
@@ -55,7 +58,14 @@ const HeaderAuth = () => {
 
   return user ? (
     <div className="flex items-center gap-4">
-      <span>Hola, {userName}!</span>
+      <span className="text-sm">
+        Hola, {userName}
+        {second_cat && (
+          <span className="text-muted-foreground text-xs ml-1">
+            • {second_cat}
+          </span>
+        )}
+      </span>
       <Button onClick={handleSignOut} variant={"outline"}>
         Cerrar Sesión
       </Button>

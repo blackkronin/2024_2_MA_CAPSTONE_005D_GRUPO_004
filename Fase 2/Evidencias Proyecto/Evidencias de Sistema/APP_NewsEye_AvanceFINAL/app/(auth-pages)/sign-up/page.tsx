@@ -13,12 +13,13 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [studies, setStudies] = useState('');
   const [interests, setInterests] = useState<string[]>([]); // Cambiado a array para múltiples intereses
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [first_cat, setFirstCat] = useState('');
+  const [second_cat, setSecondCat] = useState('');
   const [notification, setNotification] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
 
   interface InterestChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
 
@@ -40,10 +41,9 @@ const SignUp = () => {
         full_name: string;
         birth_date: string;
         age: number;
-        studies: string;
         interests: string;
-        avatar_url: string;
-        user_category: string;
+        first_cat: string;
+        second_cat: string;
       };
     };
   }
@@ -59,10 +59,6 @@ const SignUp = () => {
     setError('');
 
     const age = calculateAge(birthDate);
-    const userCategory = categorizeUser({
-      age,
-      occupation: studies
-    });
 
     const signUpData: SignUpData = {
       email,
@@ -73,10 +69,9 @@ const SignUp = () => {
           full_name: name,
           birth_date: birthDate,
           age: age,
-          studies: studies,
           interests: interests.join(','),
-          avatar_url: avatarUrl,
-          user_category: userCategory,
+          first_cat: first_cat,
+          second_cat: second_cat,
         },
       },
     };
@@ -89,17 +84,29 @@ const SignUp = () => {
       return;
     }
 
-    setNotification(`Hola ${name}, te has registrado exitosamente como ${userCategory}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
+    if (first_cat === 'comun') {
+      setNotification(`Hola ${name}, te has registrado exitosamente como un Usuario Común. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
+    } else {
+      setNotification(`Hola ${name}, te has registrado exitosamente como ${first_cat}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
+    }
 
     setTimeout(() => {
       router.push('/sign-in');
     }, 5000);
+
+    console.log("Registro exitoso:", data);
+  };
+
+  const hamburgerOptions: Record<string, string[]> = {
+    estudiante: ['Universitario', 'Escolar'],
+    profesional: ['Divulgador', 'Ingeniero', 'Pedagogía', 'Científico'],
+    comun: ['Inf Simple', 'Inf Detallada']
   };
 
   return (
-    <div>
-      <h1>Registro de Usuario</h1>
+    <div className="page-container">
       <form onSubmit={handleSubmit}>
+        <h1>Registro de Usuario</h1>
         <div className="form-group">
           <label htmlFor="email">Correo Electrónico:</label>
           <input
@@ -152,18 +159,52 @@ const SignUp = () => {
         </div>
         <div className="form-group">
           <label htmlFor="currentStatus">Ocupación Actual:</label>
-          <select
+            <select
             id="currentStatus"
-            value={studies}
-            onChange={(e) => setStudies(e.target.value)}
+            value={first_cat}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFirstCat(value); // Set first_cat correctly
+              setSecondCat(''); // Reset second_cat when first_cat changes
+              setShowHamburgerMenu(false);
+              console.log("Selected value:", value); // Corrected console.log statement
+            }}
             required
-          >
+            >
             <option value="">Seleccione...</option>
             <option value="estudiante">Estudiante</option>
-            <option value="trabajando">Trabajando</option>
-            <option value="retirado">Retirado</option>
-            <option value="no_responde">Prefiero no responder</option>
-          </select>
+            <option value="profesional">Profesional</option>
+            <option value="comun">Prefiero no responder</option>
+            </select>
+          {first_cat && (
+            <div className="subcategory-container">
+              <button
+                type="button"
+                className="hamburger-button"
+                onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
+              >
+                {second_cat || 'Seleccionar subcategoría ▼'}
+              </button>
+              
+              {showHamburgerMenu && (
+                <div className="hamburger-menu">
+                  {hamburgerOptions[first_cat]?.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`menu-option ${second_cat === option ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSecondCat(option);
+                        setShowHamburgerMenu(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="form-group">
           <label>Intereses:</label>
@@ -277,68 +318,88 @@ const SignUp = () => {
       <style jsx>{`
         .page-container {
           max-width: 400px;
-          margin: auto;
+          margin: 2rem auto;
           padding: 2rem;
-          background-color: #1a1a1a;
-          color: #fff;
+          background-color: #141414;
+          color: #C5C6C7;
           border-radius: 10px;
-          box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 0 20px rgba(102, 252, 241, 0.1);
         }
+
         h1 {
           text-align: center;
-          color: #fff;
+          color: #66FCF1;
           font-size: 1.8rem;
-          margin-bottom: 1rem;
+          margin-bottom: 2rem;
         }
+
         .form-group {
-          margin-bottom: 1rem;
+          margin-bottom: 1.2rem;
         }
+
         label {
           display: block;
           font-size: 0.9rem;
-          color: #aaa;
-        }
-        input[type="email"],
-        input[type="password"],
-        input[type="text"],
-        input[type="date"],
-        select {
-          width: 100%;
-          padding: 0.75rem;
-          margin-top: 0.5rem;
-          background-color: #333;
-          border: 1px solid #555;
-          border-radius: 5px;
-          color: #fff;
-        }
-        .checkbox-group label {
-          display: block;
+          color: #66FCF1;
           margin-bottom: 0.5rem;
-          color: #aaa;
         }
-        button {
+
+        input, select {
           width: 100%;
           padding: 0.75rem;
-          margin-top: 1rem;
-          background-color: #8b5cf6;
+          background-color: #1a1a1a;
           border: none;
-          color: #fff;
+          border-radius: 4px;
+          color: #C5C6C7;
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+        }
+
+        .checkbox-group {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          padding: 1rem;
+          background-color: #1a1a1a;
+          border-radius: 4px;
+        }
+
+        .checkbox-group label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #66FCF1;
+          font-size: 0.85rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
+          accent-color: #66FCF1;
+          margin: 0;
+        }
+
+        button[type="submit"] {
+          width: 100%;
+          padding: 0.75rem;
+          background-color: #66FCF1;
+          border: none;
+          color: #000000;
           font-size: 1rem;
           font-weight: bold;
-          border-radius: 5px;
+          border-radius: 4px;
           cursor: pointer;
-          transition: background 0.3s ease;
+          margin-top: 1rem;
+          text-transform: uppercase;
         }
-        button:hover {
-          background-color: #7c3aed;
-        }
+
         .login-link {
           text-align: center;
           margin-top: 1rem;
           color: #aaa;
         }
         .login-link a {
-          color: #8b5cf6;
+          color: #66FCF1;
           text-decoration: underline;
         }
         .notification {
@@ -350,6 +411,69 @@ const SignUp = () => {
           color: #f87171;
           text-align: center;
           margin-top: 1rem;
+        }
+        .subcategory-container {
+          position: relative;
+          margin-top: 0.5rem;
+        }
+        .hamburger-button {
+          width: 100%;
+          padding: 0.5rem;
+          background-color: #333;
+          border: 1px solid #555;
+          color: #fff;
+          text-align: left;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          height: 35px;
+        }
+        .hamburger-menu {
+          position: absolute;
+          width: 100%;
+          background-color: #333;
+          border: 1px solid #555;
+          border-radius: 4px;
+          margin-top: 2px;
+          z-index: 10;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .menu-option {
+          width: 100%;
+          padding: 0.5rem;
+          text-align: left;
+          background: none;
+          border: none;
+          color: #fff;
+          cursor: pointer;
+          font-size: 0.85rem;
+          height: 35px;
+        }
+        .menu-option:hover {
+          background-color: #444;
+        }
+        .menu-option.selected {
+          background-color: #45A29E;
+        }
+        input[type="date"] {
+          width: 100%;
+          padding: 0.75rem;
+          background-color: #1a1a1a;
+          border: none;
+          border-radius: 4px;
+          color: #C5C6C7;
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          opacity: 0.7;
+          cursor: pointer;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
         }
       `}</style>
     </div>
