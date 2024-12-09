@@ -4,11 +4,9 @@ import '@/app/globals.css';
 
 const ProfilePage = () => {
     return (
-        <div className="profile-page">
-            <div className="left-column">
-                <ProfileHeader />
-            </div>
-        </div>
+        <>
+        <ProfileHeader />
+        </>
     );
 };
 

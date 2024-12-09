@@ -1,7 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 266 100% 50%; /* Purple color */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,10 +22,10 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 266 100% 50%;
     --radius: 0.5rem;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -33,7 +33,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 266 100% 50%; /* Purple color */
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -45,7 +45,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 266 100% 50%;
   }
 }
 
@@ -58,76 +58,71 @@
   }
 }
 
-/* Estilos para los botones */
-.btn {
-  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-    disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+/* Report Markdown Styles - Light Theme */
+.report-container {
+  @apply font-sans leading-relaxed p-5 max-w-3xl mx-auto;
+  background-color: theme('colors.background');
+  color: theme('colors.foreground');
 }
 
+.dark .report-container {
+  background-color: theme('colors.background');
+  color: theme('colors.foreground');
+}
+
+.report-title {
+  @apply text-4xl font-bold text-center mb-4;
+  color: theme('colors.foreground');
+}
+
+.report-heading {
+  @apply text-2xl font-bold text-foreground border-b-2 border-border pb-1 mt-6 mb-4;
+}
+
+.report-subheading {
+  @apply text-xl font-semibold text-foreground mt-5 mb-3;
+}
+
+.report-paragraph {
+  @apply text-base text-foreground mt-4;
+}
+
+.report-references {
+  @apply text-sm text-muted-foreground mt-8 border-t border-border pt-4;
+}
+
+.report-citation {
+  @apply text-primary hover:text-primary/90 underline;
+}
+
+.download-pdf-button {
+  @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-bold text-center 
+    cursor-pointer transition-colors hover:bg-primary/90 shadow-lg;
+}
+
+/* Button Styles */
 .btn-primary {
   @apply bg-primary text-primary-foreground hover:bg-primary/90;
 }
 
-.btn-secondary {
+.btn-logout {
+  @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+}
+
+.btn-explore {
   @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
 }
 
-/* Estilos para los formularios */
+/* Form Styles */
 .form-container {
-  @apply max-w-md mx-auto p-6 space-y-6 bg-card rounded-lg shadow-lg;
-}
-
-.form-group {
-  @apply space-y-2;
-}
-
-.form-label {
-  @apply text-sm font-medium text-foreground;
+  @apply max-w-md mx-auto p-6 bg-card rounded-lg shadow-lg;
 }
 
 .form-input {
-  @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-    ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium
-    placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2
-    focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-ring;
 }
 
-/* Estilos para las noticias */
-.news-card {
-  @apply bg-card rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg;
-}
-
-.news-title {
-  @apply text-lg font-semibold text-card-foreground line-clamp-2;
-}
-
-.news-description {
-  @apply text-sm text-muted-foreground line-clamp-3;
-}
-
-.news-link {
-  @apply inline-flex items-center space-x-2 text-primary hover:text-primary/90 font-medium;
-}
-
-/* Estilos para el carrusel */
-.carousel-container {
-  @apply relative overflow-hidden rounded-xl bg-gradient-to-r from-primary/20 to-primary/10;
-}
-
-.carousel-slide {
-  @apply absolute inset-0 flex items-center justify-center text-center;
-}
-
-.carousel-title {
-  @apply text-4xl font-bold text-foreground mb-4;
-}
-
-.carousel-subtitle {
-  @apply text-xl text-muted-foreground;
-}
-
-/* Estilos para la navegación */
+/* Navigation Styles */
 .nav-link {
   @apply text-muted-foreground hover:text-foreground transition-colors;
 }
@@ -136,11 +131,12 @@
   @apply text-foreground font-medium;
 }
 
-/* Estilos para mensajes y notificaciones */
-.toast {
-  @apply bg-card text-card-foreground rounded-lg shadow-lg p-4;
+/* Card Styles */
+.card {
+  @apply bg-card text-card-foreground rounded-lg shadow-md p-4;
 }
 
+/* Alert Styles */
 .alert-success {
   @apply bg-green-500/10 text-green-500 rounded-lg p-4;
 }
@@ -148,86 +144,3 @@
 .alert-error {
   @apply bg-destructive/10 text-destructive rounded-lg p-4;
 }
-
-/* Markdown styles */
-.markdown {
-  @apply max-w-none text-foreground;
-}
-
-.markdown h1 {
-  @apply text-3xl font-bold mb-4 text-foreground;
-}
-
-.markdown h2 {
-  @apply text-2xl font-semibold mb-3 text-foreground;
-}
-
-.markdown h3 {
-  @apply text-xl font-semibold mb-2 text-foreground;
-}
-
-.markdown h4 {
-  @apply text-lg font-semibold mb-2 text-foreground;
-}
-
-.markdown h5 {
-  @apply text-base font-semibold mb-2 text-foreground;
-}
-
-.markdown h6 {
-  @apply text-sm font-semibold mb-2 text-foreground;
-}
-
-.markdown p {
-  @apply mb-4 text-muted-foreground;
-}
-
-.markdown a {
-  @apply text-primary hover:text-primary/90 underline;
-}
-
-.markdown ul {
-  @apply list-disc list-inside mb-4 text-muted-foreground;
-}
-
-.markdown ol {
-  @apply list-decimal list-inside mb-4 text-muted-foreground;
-}
-
-.markdown blockquote {
-  @apply border-l-4 border-primary pl-4 italic my-4 text-muted-foreground;
-}
-
-.markdown code {
-  @apply bg-muted text-muted-foreground px-1 py-0.5 rounded text-sm;
-}
-
-.markdown pre {
-  @apply bg-muted p-4 rounded-lg overflow-x-auto mb-4;
-}
-
-.markdown pre code {
-  @apply bg-transparent p-0 text-sm;
-}
-
-.markdown img {
-  @apply max-w-full h-auto rounded-lg my-4;
-}
-
-.markdown hr {
-  @apply my-8 border-t border-border;
-}
-
-.markdown table {
-  @apply w-full border-collapse mb-4;
-}
-
-.markdown th,
-.markdown td {
-  @apply border border-border p-2 text-sm;
-}
-
-.markdown th {
-  @apply bg-muted font-semibold text-muted-foreground;
-}
-

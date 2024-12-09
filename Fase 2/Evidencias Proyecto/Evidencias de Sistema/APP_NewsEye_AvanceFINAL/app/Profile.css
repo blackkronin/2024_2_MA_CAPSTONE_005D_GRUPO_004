@@ -1,57 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .perfil-personal__container {
-  display: flex;
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  height: 100vh;
+  @apply flex flex-col items-center justify-center min-h-screen bg-background text-foreground;
 }
 
 .perfil-personal__card {
-  background-color: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  padding: 15px;
-  position: relative;
+  @apply bg-card border border-border rounded-lg p-4 shadow-md;
 }
 
 .perfil-personal__card .text-primary {
-  color: #007bff;
+  color: var(--primary);
 }
 
 .perfil-personal__card .text-muted-foreground {
-  color: #666666;
+  color: var(--muted-foreground);
 }
 
 .perfil-personal__card .bg-secondary {
-  background-color: #e0e0e0;
+  background-color: var(--secondary);
 }
 
-.perfil-personal__card .text-secondary-foreground {
-  color: #333333;
+.perfil-personal__avatar {
+  @apply w-32 h-32 rounded-full;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
-.perfil-personal__card .prose {
-  max-width: none;
+.perfil-personal__name {
+  @apply text-2xl font-bold text-center mb-2;
+  color: var(--primary);
 }
 
-.perfil-personal__card .dark .prose-invert {
-  color: #ffffff;
+.perfil-personal__category {
+  @apply text-center mb-4;
+  color: var(--muted-foreground);
 }
 
-.perfil-personal__card .line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.perfil-personal__interests {
+  @apply space-y-2;
 }
 
-.perfil-personal__card .hover\:shadow-lg:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+.perfil-personal__interest-item {
+  @apply text-sm;
+  color: var(--muted-foreground);
 }
 
-.perfil-personal__card .transition-shadow {
-  transition: box-shadow 0.3s;
+.tabs-list {
+  @apply grid w-full grid-cols-3;
 }
 
-.perfil-personal__card .duration-300 {
-  transition-duration: 300ms;
+.tabs-trigger {
+  @apply text-center py-2 px-4 rounded-lg cursor-pointer transition-colors;
+}
+
+.tabs-trigger:hover {
+  background-color: var(--primary) / 10%;
+}
+
+.tabs-trigger[data-state="active"] {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.card-header {
+  @apply bg-gray-50;
+}
+
+.card-title {
+  @apply text-lg font-bold;
+  color: var(--primary);
+}
+
+.card-description {
+  @apply mt-1 text-sm;
+  color: var(--muted-foreground);
+}
+
+.card-content {
+  @apply pt-4;
+}
+
+.button-outline {
+  @apply mt-2 w-full;
+  &:hover {
+    background-color: var(--primary) / 10%;
+  }
+}
+
+.scroll-area {
+  @apply h-[60vh] pr-4;
 }

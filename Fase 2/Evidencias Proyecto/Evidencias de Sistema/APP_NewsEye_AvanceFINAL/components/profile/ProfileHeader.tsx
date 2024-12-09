@@ -36,30 +36,30 @@ const PostItem = ({ file, jsonData, onSelect }: { file: FileData; jsonData: Json
 
   return (
     <Card className="perfil-personal__card mb-4 hover:shadow-lg transition-shadow duration-300">
-      <CardHeader className="bg-gray-50">
+      <CardHeader className="card-header">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg font-bold text-primary">{jsonData.title}</CardTitle>
-            <CardDescription className="mt-1 text-sm text-gray-500">{jsonData.date}</CardDescription>
+            <CardTitle className="card-title">{jsonData.title}</CardTitle>
+            <CardDescription className="card-description">{jsonData.date}</CardDescription>
           </div>
           <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
             {jsonData.category}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="card-content">
         {showFullReport ? (
           <>
             <Button 
               variant="outline" 
-              className="mb-4" 
+              className="button-outline" 
               onClick={() => setShowFullReport(false)}
             >
               Volver
             </Button>
-            <ScrollArea className="h-[60vh] pr-4">
+            <ScrollArea className="scroll-area">
               <ReactMarkdown 
-                className="prose prose-blue max-w-none dark:prose-invert"
+                className="max-w-none"
                 remarkPlugins={[remarkGfm]}
               >
                 {jsonData.content}
@@ -71,7 +71,7 @@ const PostItem = ({ file, jsonData, onSelect }: { file: FileData; jsonData: Json
             <p className="text-sm text-muted-foreground line-clamp-3">{jsonData.summary}</p>
             <Button 
               variant="outline" 
-              className="mt-2 w-full hover:bg-blue-50"
+              className="button-outline"
               onClick={() => setShowFullReport(true)}
             >
               Ver Informe Completo
@@ -182,61 +182,55 @@ export default function PerfilPersonal() {
   }, []);
 
   return (
-    <div className="perfil-personal__container mx-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <div className="flex justify-center">
-              <Avatar className="w-32 h-32 bg-blue-100 text-blue-600">
-                <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Avatar" />
-                <AvatarFallback>
-                  {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <h2 className="text-2xl font-bold text-center mb-2 text-blue-600">
-              {profile.full_name}
-            </h2>
-            <p className="text-center text-muted-foreground mb-4">{profile.first_cat}</p>
-            <div className="space-y-2">
-              <h3 className="font-semibold text-gray-700">Intereses:</h3>
-              <ul className="list-none space-y-1">
-                {profile.interests.map((interest, index) => (
-                  <li key={index} className="text-sm text-gray-600">
-                    {interest}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="perfil-personal__container">
+      <Card className="perfil-personal__card mb-6">
+        <CardHeader className="flex justify-center">
+          <Avatar className="perfil-personal__avatar">
+            <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Avatar" />
+            <AvatarFallback>
+              {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </CardHeader>
+        <CardContent>
+          <h2 className="perfil-personal__name">
+            {profile.full_name}
+          </h2>
+          <p className="perfil-personal__category">{profile.first_cat}</p>
+          <div className="perfil-personal__interests">
+            <h3 className="font-semibold text-gray-700">Intereses:</h3>
+            <ul className="list-none space-y-1">
+              {profile.interests.map((interest, index) => (
+                <li key={index} className="perfil-personal__interest-item">
+                  {interest}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="md:col-span-2">
-          <Tabs value={selectedFolder} onValueChange={setSelectedFolder} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="conocimiento">Conocimiento</TabsTrigger>
-              <TabsTrigger value="profesion">Profesión</TabsTrigger>
-              <TabsTrigger value="para_mi">Para Mí</TabsTrigger>
-            </TabsList>
-            {["conocimiento", "profesion", "para_mi"].map((folder) => (
-              <TabsContent key={folder} value={folder}>
-                {loading && <p>Cargando archivos...</p>}
-                {error && <p className="text-red-500">{error}</p>}
-                {files.map((file) => (
-                  <PostItem
-                    key={file.path}
-                    file={file}
-                    jsonData={jsonDataMap.get(file.path) || null}
-                    onSelect={() => {}}
-                  />
-                ))}
-              </TabsContent>
+      <Tabs value={selectedFolder} onValueChange={setSelectedFolder} className="w-full">
+        <TabsList className="tabs-list">
+          <TabsTrigger value="conocimiento" className="tabs-trigger">Conocimiento</TabsTrigger>
+          <TabsTrigger value="profesion" className="tabs-trigger">Profesión</TabsTrigger>
+          <TabsTrigger value="para_mi" className="tabs-trigger">Para Mí</TabsTrigger>
+        </TabsList>
+        {["conocimiento", "profesion", "para_mi"].map((folder) => (
+          <TabsContent key={folder} value={folder}>
+            {loading && <p>Cargando archivos...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+            {files.map((file) => (
+              <PostItem
+                key={file.path}
+                file={file}
+                jsonData={jsonDataMap.get(file.path) || null}
+                onSelect={() => {}}
+              />
             ))}
-          </Tabs>
-        </div>
-      </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
