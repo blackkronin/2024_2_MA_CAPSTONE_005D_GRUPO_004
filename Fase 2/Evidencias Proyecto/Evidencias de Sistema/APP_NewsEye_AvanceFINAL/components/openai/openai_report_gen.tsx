@@ -2,19 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { fetchUserCategories, generateDynamicPrompt, selectedTopic, getConfigForUser, ConfigurationsType } from "@/utils/reports_ai/prompts_reporter";
+import { fetchUserCategories, generateDynamicPrompt, getConfigForUser, ConfigurationsType, determineTopic } from "@/utils/reports_ai/prompts_reporter";
 import { searchArticles } from "@/utils/reports_ai/tavily_scraper";
 import { downloadPDF } from "@/utils/reports_ai/PDFConverter";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import "@/app/globals.css";
 import { OpenAI } from "openai";
 import { User } from "@supabase/supabase-js";
+import crypto from 'crypto';
+import "@/app/apaStyle.css";
+import "@/app/globals.css";
 
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true,
 });
+
+const generateUniqueFileName = (name: string) => {
+  const sanitized = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const uniqueSuffix = crypto.randomBytes(4).toString('hex');
+  return `${sanitized}_${uniqueSuffix}`;
+};
 
 const OpenAIReportGen: React.FC = ({}) => {
   const [report, setReport] = useState<string>('');
@@ -25,14 +33,19 @@ const OpenAIReportGen: React.FC = ({}) => {
   const [messages, setMessages] = useState<string[]>([]);
   const [streamedContent, setStreamedContent] = useState('');
   const [articleTitles, setArticleTitles] = useState<string[]>([]);
-  const [category, setCategory] = useState<string>(selectedTopic);
+  const [category, setCategory] = useState<string>('');
   const [reportTitle, setReportTitle] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      console.log(user);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        console.log(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        setError("Error fetching user. Please try again.");
+      }
     };
 
     fetchUser();
@@ -91,7 +104,7 @@ const OpenAIReportGen: React.FC = ({}) => {
 
         const summary = summaryResponse.choices[0]?.message?.content?.trim() || "No summary available";
 
-        const category = selectedTopic;
+        const category = determineTopic(prompt, articles);
         setCategory(category);
 
         const show_title = `Reporte de ${category}`;
@@ -107,49 +120,49 @@ const OpenAIReportGen: React.FC = ({}) => {
     }
   };
 
-  const sanitizeFileName = (name: string) => {
-    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  };
-
   const saveReportToSupabase = async (reportContent: string, category: string, title: string, summary: string, primaryCategory: keyof ConfigurationsType, secondaryCategory: string) => {
     if (user) {
-      const folderName = `reports_user_${user.id}`;
-      const date = new Date().toISOString().split("T")[0];
-      const sanitizedCategory = sanitizeFileName(category);
-      const sanitizedTitle = sanitizeFileName(title);
-      const fileName = `${sanitizedCategory}/${date}_${sanitizedTitle}.json`;
+      try {
+        const folderName = `reports_user_${user.id}`;
+        const date = new Date().toISOString().split("T")[0];
+        const sanitizedTitle = generateUniqueFileName(title);
+        const fileName = `${category}/${date}_${sanitizedTitle}.json`;
 
-      const { data: folderData, error: folderError } = await supabase.storage.from("reportes.usuarios").list(folderName);
+        const { data: folderData, error: folderError } = await supabase.storage.from("reportes.usuarios").list(folderName);
 
-      if (folderError || !folderData || folderData.length === 0) {
-        const subfolders = ["conocimiento", "profesion", "para_mi"];
-        for (const subfolder of subfolders) {
-          const { data: subfolderData, error: subfolderError } = await supabase.storage.from("reportes.usuarios").list(`${folderName}/${subfolder}`);
-          if (!subfolderData || subfolderData.length === 0) {
-            const { error: createFolderError } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${subfolder}/.keep`, new Blob([""]));
-            if (createFolderError) {
-              console.error('Error creating folder:', createFolderError);
-              return;
+        if (folderError || !folderData || folderData.length === 0) {
+          const subfolders = ["conocimiento", "profesion", "para_mi"];
+          for (const subfolder of subfolders) {
+            const { data: subfolderData, error: subfolderError } = await supabase.storage.from("reportes.usuarios").list(`${folderName}/${subfolder}`);
+            if (!subfolderData || subfolderData.length === 0) {
+              const { error: createFolderError } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${subfolder}/.keep`, new Blob([""]));
+              if (createFolderError) {
+                console.error('Error creating folder:', createFolderError);
+                return;
+              }
             }
           }
         }
-      }
 
-      const config = getConfigForUser(primaryCategory, secondaryCategory);
-      const reportJSON = {
-        title,
-        summary,
-        category,
-        date,
-        structure: config.structure,
-        content: reportContent,
-      };
+        const config = getConfigForUser(primaryCategory, secondaryCategory);
+        const reportJSON = {
+          title,
+          summary,
+          category,
+          date,
+          structure: config.structure,
+          content: reportContent,
+        };
 
-      const { error } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${fileName}`, JSON.stringify(reportJSON));
-      if (error) {
-        console.error("Error saving report:", error);
-      } else {
-        console.log("Report saved successfully");
+        const { error } = await supabase.storage.from("reportes.usuarios").upload(`${folderName}/${fileName}`, JSON.stringify(reportJSON));
+        if (error) {
+          console.error("Error saving report:", error);
+        } else {
+          console.log("Report saved successfully");
+        }
+      } catch (error) {
+        console.error("Error saving report to Supabase:", error);
+        setError("Error saving report. Please try again.");
       }
     }
   };
@@ -193,12 +206,16 @@ const OpenAIReportGen: React.FC = ({}) => {
               children={streamedContent}
               remarkPlugins={[remarkGfm]}
               components={{
-                h1: ({ node, ...props }) => <h1 id='report-title' className="report-title" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="report-heading" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="report-subheading" {...props} />,
-                p: ({ node, ...props }) => <p className="report-paragraph" {...props} />,
-                a: ({ node, ...props }) => <a className="report-citation" {...props} />,
-                ul: ({ node, ...props }) => <ul className="report-references" {...props} />,
+                h1: ({ node, ...props }) => <h1 className="title h1" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="title h2" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="title h3" {...props} />,
+                p: ({ node, ...props }) => <p className="long apa" {...props} />,
+                ul: ({ node, ...props }) => <ul className="apa" {...props} />,
+                li: ({ node, ...props }) => <li className="apa" {...props} />,
+                a: ({ node, ...props }) => <a className="apa-citation" {...props} />,
+                table: ({ node, ...props }) => <table className="apaTable" {...props} />,
+                th: ({ node, ...props }) => <th className="apaTable" {...props} />,
+                td: ({ node, ...props }) => <td className="apaTable" {...props} />,
               }}
             />
           </div>

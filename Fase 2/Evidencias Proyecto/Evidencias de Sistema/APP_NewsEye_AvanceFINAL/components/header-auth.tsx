@@ -7,6 +7,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { supabase } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { FaUser, FaUsers, FaRobot } from "react-icons/fa";
 
 const HeaderAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -58,6 +59,21 @@ const HeaderAuth = () => {
 
   return user ? (
     <div className="flex items-center gap-4">
+      <Button asChild size="sm" variant="outline">
+        <Link href="/Profile">
+          <FaUser className="mr-2" /> Perfil
+        </Link>
+      </Button>
+      <Button asChild size="sm" variant="outline">
+        <Link href="/social">
+          <FaUsers className="mr-2" /> Comunidad
+        </Link>
+      </Button>
+      <Button asChild size="sm" variant="outline">
+        <Link href="/AIReporter">
+          <FaRobot className="mr-2" /> HuemulAI
+        </Link>
+      </Button>
       <span className="text-sm">
         Hola, {userName}
         {second_cat && (
@@ -66,6 +82,7 @@ const HeaderAuth = () => {
           </span>
         )}
       </span>
+      
       <Button onClick={handleSignOut} variant={"outline"}>
         Cerrar Sesión
       </Button>

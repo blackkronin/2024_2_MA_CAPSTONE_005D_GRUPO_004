@@ -58,43 +58,6 @@
   }
 }
 
-/* Report Markdown Styles - Light Theme */
-.report-container {
-  @apply font-sans leading-relaxed p-5 max-w-3xl mx-auto;
-  background-color: theme('colors.background');
-  color: theme('colors.foreground');
-}
-
-.dark .report-container {
-  background-color: theme('colors.background');
-  color: theme('colors.foreground');
-}
-
-.report-title {
-  @apply text-4xl font-bold text-center mb-4;
-  color: theme('colors.foreground');
-}
-
-.report-heading {
-  @apply text-2xl font-bold text-foreground border-b-2 border-border pb-1 mt-6 mb-4;
-}
-
-.report-subheading {
-  @apply text-xl font-semibold text-foreground mt-5 mb-3;
-}
-
-.report-paragraph {
-  @apply text-base text-foreground mt-4;
-}
-
-.report-references {
-  @apply text-sm text-muted-foreground mt-8 border-t border-border pt-4;
-}
-
-.report-citation {
-  @apply text-primary hover:text-primary/90 underline;
-}
-
 .download-pdf-button {
   @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-bold text-center 
     cursor-pointer transition-colors hover:bg-primary/90 shadow-lg;

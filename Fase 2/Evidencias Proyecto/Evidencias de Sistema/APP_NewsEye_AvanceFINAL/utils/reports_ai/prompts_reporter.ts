@@ -9,35 +9,35 @@ const openai = new OpenAI({
 // Definir tipos para las configuraciones
 export type ConfigurationsType = {
   estudiante: {
-    Universitario: { structure: string[]; tone: string };
-    Escolar: { structure: string[]; tone: string };
+    universitario: { structure: string[]; tone: string };
+    escolar: { structure: string[]; tone: string };
   };
   profesional: {
-    Ingeniero: { structure: string[]; tone: string };
-    Científico: { structure: string[]; tone: string };
-    Pedagogía: { structure: string[]; tone: string };
-    Divulgador: { structure: string[]; tone: string };
+    ingeniero: { structure: string[]; tone: string };
+    científico: { structure: string[]; tone: string };
+    pedagogía: { structure: string[]; tone: string };
+    divulgador: { structure: string[]; tone: string };
   };
   comun: {
-    Simple: { structure: string[]; tone: string };
-    Detallado: { structure: string[]; tone: string };
+    simple: { structure: string[]; tone: string };
+    detallado: { structure: string[]; tone: string };
   };
 };
 
 const configurations:ConfigurationsType = {
   estudiante: {
-    Universitario: { structure: ["Resumen", "Introducción", "Resultados", "Conclusión"], tone: "formal educativo" },
-    Escolar: { structure: ["Resumen", "Ejemplos", "Conclusión"], tone: "sencillo" },
+    universitario: { structure: ["Resumen general", "Introducción", "Resultados", "Análisis profundo" ,"Datos estadísticos", "Conclusión"], tone: "formal educativo" },
+    escolar: { structure: ["Resumen", "Ejemplos","glosario de términos", "Conclusión"], tone: "sencillo" },
   },
   profesional: {
-    Ingeniero: { structure: ["Resumen técnico", "Especificaciones","Técnicas y Estrategias","Propuestas de como aplicar","Conclusión"], tone: "técnico" },
-    Científico: { structure: ["Introducción", "Metodología","Evidencia Científica", "Resultados", "Discusión"], tone: "académico" },
-    Pedagogía: { structure: ["Datos clave", "Propuestas","Como doctrinar","Juegos de aprendizaje recomendados", "Conclusión"], tone: "educativo" },
-    Divulgador: { structure: ["Introducción", "Narrativa", "Pruebas", "Conclusión"], tone: "persuasivo" },
+    ingeniero: { structure: ["Resumen técnico", "Objetivos y contexto","Problemas o limitaciones","Identificar oportunidades","Idea de implementacion", "Conclusión y siguientes pasos"], tone: "técnico" },
+    científico: { structure: ["Introducción", "palabras clave","Metodología", "Resultados", "Discusión"], tone: "académico" },
+    pedagogía: { structure: ["Definicion de objetivos de aprendizaje", "Necesidades y conocimientos previos","planificacion de actividades secuenciales", "Recursos y Herramientas", "Estrategias de Evaluación Formativa", "Evaluación y cierre"], tone: "educativo" },
+    divulgador: { structure: ["Definicion de tema y relevancia", "analisis de contexto y problemas", "Soluciones y beneficios", "Adaptacion a la audiencia", "Conclusión y llamado a la accion"], tone: "persuasivo" },
   },
   comun: {
-    Simple: { structure: ["Resumen", "Información básica", "Conclusión"], tone: "claro" },
-    Detallado: { structure: ["Resumen", "Análisis", "Conclusión"], tone: "formal" },
+    simple: { structure: ["Introducción", "Conexion con interés público","Contextualizacion", "Soluciones resonantes", "Recursos y herramientas","Llamado a la accion "], tone: "directo atractivo" },
+    detallado: { structure: ["Contexto", "Marco legal","Análisis de problemas/soluciones", "Participacion de poblacion", "Herramientas para ahondar el tema", "Conclusión "], tone: "directo exhaustivo" },
   },
 };
 
@@ -52,7 +52,7 @@ export const fetchUserCategories = async (userId: string) => {
 
   return {
     primaryCategory: data.first_cat as keyof ConfigurationsType,
-    secondaryCategory: data.second_cat as keyof ConfigurationsType,
+    secondaryCategory: data.second_cat as keyof ConfigurationsType[keyof ConfigurationsType],
   };
 };
 
@@ -66,7 +66,7 @@ export const getConfigForUser = (
     throw new Error(`Categoría primaria no encontrada: ${primaryCategory}`);
   }
 
-  const secondaryConfig = (primaryConfig as any)[secondaryCategory];
+  const secondaryConfig = (primaryConfig as any)[secondaryCategory.toLowerCase()];
   if (!secondaryConfig) {
     console.warn(`Categoría secundaria no encontrada: ${secondaryCategory}, usando fallback.`);
     return {
@@ -78,6 +78,7 @@ export const getConfigForUser = (
   return secondaryConfig;
 };
 
+
 /*categorias de informe */
 export const topics: string[] = ["conocimiento", "profesion", "para_mi"];
 export const selectedTopic: string = topics[0];
@@ -88,38 +89,39 @@ export const generateDynamicPrompt = (
   articles: { title: string; content: string }[],
   query: string,
   primaryCategory: keyof ConfigurationsType,
-  secondaryCategory: typeof primaryCategory,
+  secondaryCategory: keyof ConfigurationsType[keyof ConfigurationsType]
 ): string => {
   
 
-      
+  
   const config: ConfType = getConfigForUser(primaryCategory, secondaryCategory);
-
+  const Tone = config.tone;
+  
   const formattedArticles = articles.map(a => `${a.title}: ${a.content}`).join("\n");
 
   return `
-  Informe de Consulta
+    # Informe de Consulta
 
-  Información del Usuario:
+  ## Información del Usuario:
   -------------------------------------------------
   ${userInfo}
   -------------------------------------------------
 
-  Información de los Artículos:
+  ## Información de los Artículos:
   -------------------------------------------------
   ${articles.map((a) => `${a.title}: ${a.content}`).join("\n")}
   -------------------------------------------------
 
-  Consulta:
+  ## Consulta:
   Utilizando únicamente la información proporcionada arriba, responde la siguiente consulta de forma detallada: "${query}".
 
-  Tono:
-  El informe debe escribirse con el siguiente tono: ${config.tone}.
+  ### Tono:
+  El informe debe escribirse con el siguiente tono: ${Tone}.
 
-  Estructura del Informe:
+  ### Estructura del Informe:
   El informe debe seguir esta estructura: ${config.structure.join(", ")}.
 
-  Requisitos Adicionales:
+  ### Requisitos Adicionales:
   - Asegúrate de utilizar la estructura de informe señalada y el tono especificado para redactar el informe.
   - Profundiza en los conceptos del tono y de la estructura para generar una idea clara del destinatario del informe y sus necesidades.
   - Organiza la información de manera lógica, asegurando una presentación coherente y fácil de seguir.
@@ -131,20 +133,68 @@ export const generateDynamicPrompt = (
   - Usa Markdown y el formato APA para las referencias, asegurando la cohesión en el formato del documento.
   - Incluye citas en el texto con formato [cita en texto](url) para mantener la claridad y la referencia adecuada.
   - Termina con una lista detallada de referencias, sin duplicados, utilizando URLs completas para facilitar el acceso a las fuentes.
+  - Debes buscar en fuentes que se relacionen a la categoria de usuario , EJ (puedes inferir el resto de categorias): 
 
-  Instrucciones Adicionales:
+    Estudiante: 
+      Enciclopedias y diccionarios, Directorios, Fuentes biográficas ,Fuentes estadísticas, Bibliografías, Catálogos, Informes de investigaciones, Artículos académicos, Manuales, Resúmenes y síntesis 
+      Libros, monografías, revistas y tesis, Sitios web de organizaciones académicas o sin fines de lucro, Google Scholar, Scielo, RefSeek
+    cientifico: 
+      Artículos científicos
+      Revistas académicas especializadas
+      Libros de referencia
+      Publicaciones gubernamentales
+      Sitios web de organizaciones académicas o sin fines de lucro
+      Bases de datos referenciales como Wos o Scopus 
+
+      Otras fuentes de información primaria pueden ser:
+        Patentes
+        Normas
+        Tesis
+        Actas de congresos
+        Proyectos de investigación
+        Publicaciones oficiales
+        Monografías 
+    Pedagogia:
+      fuentes Primarias, Secundarias y terciarias, Información académica, Fuentes gratuitas y abiertas, Google Académico
+      libros, artículos de revistas, tesis doctorales, memorias de congresos, datos estadísticos, documentos gubernamentales o de políticas públicas.
+
+
+    ingeniero:
+      Bases de datos multidisciplinares y especializadas, Libros, Artículos y revistas, Trabajos académicos, Sitios web.
+      Documentos oficiales, Estadísticas, Libros, Artículos científicos, Tesis, Informes técnicos, Textos, Videos, Audios, Fotografías.
+
+    Usuario comun:
+      artículos de periódicos, Artículos de revistas científicas, Publicaciones gubernamentales, Libros de referencia, Sitios web de organizaciones académicas o sin fines de lucro.
+
+    
+    
+
+
+  ### Instrucciones Adicionales:
+  - Al mencionar al usuario solo menciona información que sea de utilidad y no que tenga que ver con los procesos a realizar.
+  - Crea una estructura con titulos dinámicos, claros y que se adecuen al contexto y segun la estructura del usuario.
   - Usa fuentes confiables y actuales, priorizando la relevancia y precisión de la información.
   - Asegúrate de que cada URL esté hipervinculada en el formato [nombre del sitio](url).
   - Limita la extensión del informe a 1500 palabras para mantener la concisión y la claridad.
   - Incluye la fecha actual: ${new Date().toISOString().split("T")[0]}.
-  - Define la categoría exacta a la que se relaciona el reporte y guárdala en una variable ${selectedTopic} para su importación a la base de datos: ${topics}.
+  - Define la categoría exacta a la que se relaciona el reporte y guárdala en una variable ${selectedTopic} para su importación a la base de datos: ${topics}
 
-  Formato de Markdown:
+  ### Formato de Markdown:
   - Título principal: # Título
   - Encabezados principales: ## Encabezado
   - Subtítulos: ### Subtítulo
   - Cuerpo del texto con párrafos normales.
   - Listas: * Ítem 1, * Ítem 2, * Ítem 3
-  `;
-  /*? */
+    `;
+  /*instruccion adicional de titulos dinámicos */
+};
+export const determineTopic = (query: string, articles: { title: string; content: string }[]): string => {
+  const lowerCaseQuery = query.toLowerCase();
+  if (lowerCaseQuery.includes("estudiar") || lowerCaseQuery.includes("tarea") || lowerCaseQuery.includes("información")) {
+    return "conocimiento";
+  }
+  if (lowerCaseQuery.includes("trabajo") || lowerCaseQuery.includes("profesional") || lowerCaseQuery.includes("carrera")) {
+    return "profesion";
+  }
+  return "para_mi";
 };

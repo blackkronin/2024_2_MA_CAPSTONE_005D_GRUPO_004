@@ -60,6 +60,17 @@ const SignUp = () => {
 
     const age = calculateAge(birthDate);
 
+    let firstCat = '';
+    if (age < 18) {
+      firstCat = 'estudiante';
+    } else if (age >= 18 && age <= 65) {
+      firstCat = 'profesional';
+    } else {
+      firstCat = 'comun';
+    }
+
+    setFirstCat(firstCat);
+
     const signUpData: SignUpData = {
       email,
       password,
@@ -70,7 +81,7 @@ const SignUp = () => {
           birth_date: birthDate,
           age: age,
           interests: interests.join(','),
-          first_cat: first_cat,
+          first_cat: firstCat,
           second_cat: second_cat,
         },
       },
@@ -84,10 +95,10 @@ const SignUp = () => {
       return;
     }
 
-    if (first_cat === 'comun') {
+    if (firstCat === 'comun') {
       setNotification(`Hola ${name}, te has registrado exitosamente como un Usuario Común. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
     } else {
-      setNotification(`Hola ${name}, te has registrado exitosamente como ${first_cat}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
+      setNotification(`Hola ${name}, te has registrado exitosamente como ${firstCat}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
     }
 
     setTimeout(() => {
@@ -157,55 +168,24 @@ const SignUp = () => {
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="currentStatus">Ocupación Actual:</label>
+        {first_cat === 'profesional' && (
+          <div className="form-group">
+            <label htmlFor="secondCat">Subcategoría:</label>
             <select
-            id="currentStatus"
-            value={first_cat}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFirstCat(value); // Set first_cat correctly
-              setSecondCat(''); // Reset second_cat when first_cat changes
-              setShowHamburgerMenu(false);
-              console.log("Selected value:", value); // Corrected console.log statement
-            }}
-            required
+              id="secondCat"
+              value={second_cat}
+              onChange={(e) => setSecondCat(e.target.value)}
+              required
             >
-            <option value="">Seleccione...</option>
-            <option value="estudiante">Estudiante</option>
-            <option value="profesional">Profesional</option>
-            <option value="comun">Prefiero no responder</option>
+              <option value="">Seleccione...</option>
+              {hamburgerOptions[first_cat]?.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
-          {first_cat && (
-            <div className="subcategory-container">
-              <button
-                type="button"
-                className="hamburger-button"
-                onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-              >
-                {second_cat || 'Seleccionar subcategoría ▼'}
-              </button>
-              
-              {showHamburgerMenu && (
-                <div className="hamburger-menu">
-                  {hamburgerOptions[first_cat]?.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`menu-option ${second_cat === option ? 'selected' : ''}`}
-                      onClick={() => {
-                        setSecondCat(option);
-                        setShowHamburgerMenu(false);
-                      }}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
         <div className="form-group">
           <label>Intereses:</label>
           <div className="checkbox-group">

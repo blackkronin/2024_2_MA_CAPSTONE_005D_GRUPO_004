@@ -3,6 +3,7 @@ import NewsContainer from '@/components/home/news-container';
 import CarruselBienvenida from '@/components/home/carrusel-bienvenida';
 import Bienvenida from '@/components/home/bienvenida';
 import dynamic from 'next/dynamic';
+import './/globals.css';
 
 export default async function Home() {
   const supabase = await createClient();
