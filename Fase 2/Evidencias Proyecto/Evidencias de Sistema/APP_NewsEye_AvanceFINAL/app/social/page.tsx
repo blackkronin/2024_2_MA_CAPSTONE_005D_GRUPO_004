@@ -73,7 +73,7 @@ export default function CommunityPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
       <main className="flex-1 container py-6 px-4 md:px-6">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Comunidad</h1>
@@ -126,4 +126,3 @@ export default function CommunityPage() {
     </div>
   )
 }
-

@@ -3,20 +3,32 @@ interface UserData {
   occupation: string;
 }
 
-export function categorizeUser({ age, occupation }: UserData): string {
-  // Convertimos occupation a minúsculas para comparación consistente
-  const job = occupation?.toLowerCase() || '';
+const hamburgerOptions: Record<string, string[]> = {
+  estudiante: ['Universitario', 'Escolar'],
+  profesional: ['Divulgador', 'Ingeniero', 'Pedagogía', 'Científico'],
+  comun: ['Inf Simple', 'Inf Detallada']
+};
 
-  // Verificamos si es estudiante
-  if (job.includes('estudiante')) {
-    if (age < 18) return 'Estudiante Joven';
-    if (age < 25) return 'Estudiante Universitario';
-    return 'Estudiante Adulto';
-  } 
+export function categorizeUser({ age, occupation }: UserData): { firstCat: string, secondCatOptions: string[] } {
+  let firstCat = '';
+  let secondCatOptions: string[] = [];
 
-  // Categorías por edad si no es estudiante
-  if (age < 18) return 'Joven';
-  if (age < 30) return 'Joven Adulto';
-  if (age < 60) return 'Adulto';
-  return 'Adulto Mayor';
-} 
+  if (age < 18) {
+    firstCat = 'estudiante';
+    secondCatOptions = hamburgerOptions.estudiante.filter(option => option === 'Escolar');
+  } else if (age >= 18 && age <= 24) {
+    firstCat = 'estudiante';
+    secondCatOptions = hamburgerOptions.estudiante.filter(option => option === 'Universitario');
+  } else if (age >= 25 && age <= 50) {
+    firstCat = 'profesional';
+    secondCatOptions = hamburgerOptions.profesional;
+  } else if (age >= 51 && age <= 60) {
+    firstCat = 'comun';
+    secondCatOptions = hamburgerOptions.comun.filter(option => option === 'Inf Detallada');
+  } else {
+    firstCat = 'comun';
+    secondCatOptions = hamburgerOptions.comun.filter(option => option === 'Inf Simple');
+  }
+
+  return { firstCat, secondCatOptions };
+}

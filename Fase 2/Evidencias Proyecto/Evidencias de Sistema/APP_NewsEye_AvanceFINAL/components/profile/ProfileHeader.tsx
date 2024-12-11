@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { User } from "@supabase/supabase-js";
 import "@/app/Profile.css";
+import "@/app/apaStyle.css"
+import ReactMarkdown from 'react-markdown';
 
 const JSON_CDN_URL = "https://utqsosamxdrwvujmdxkw.supabase.co/storage/v1/object/public/reportes.usuarios/";
 
@@ -22,6 +23,7 @@ interface JsonData {
   date: string;
   structure: string[];
   content: string;
+  author: string;
 }
 
 interface FileData {
@@ -29,59 +31,106 @@ interface FileData {
   path: string;
 }
 
-const PostItem = ({ file, jsonData, onSelect }: { file: FileData; jsonData: JsonData | null; onSelect: () => void }) => {
+const extractSectionContent = (content: string, section: string, nextSection: string | null) => {
+  const start = content.indexOf(`### ${section}`);
+  if (start === -1) return ''; // Si no se encuentra la sección, devolver una cadena vacía
+  const end = nextSection ? content.indexOf(`### ${nextSection}`, start) : content.length;
+  return content.substring(start + `### ${section}`.length, end).trim();
+};
+
+const PostItem = ({ file, jsonData, onSelect, user, selectedFolder }: { file: FileData; jsonData: JsonData | null; onSelect: () => void; user: User; selectedFolder: string }) => {
   const [showFullReport, setShowFullReport] = useState(false);
+  const [alert, setAlert] = useState<{ type: string, message: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+
+  const handleDeleteReport = async () => {
+    setLoading(true);
+    setError(null);
+  
+    const filePath = `reports_user_${user.id}/${selectedFolder}/${file.name}`;
+    console.log("Attempting to delete file at path:", filePath);
+  
+    try {
+      const { error } = await supabase.storage
+        .from("reportes.usuarios")
+        .remove([filePath]);
+  
+      if (error) {
+        console.error("Error deleting report:", error.message);
+        throw error;
+      }
+  
+      console.log("File deleted successfully.");
+      setAlert({ type: 'success', message: 'Reporte eliminado exitosamente' });
+  
+      // Refresh the list of reports
+      await onSelect(); // Ensure this function fetches the latest data
+  
+    } catch (err) {
+      console.error("Error deleting report:", err);
+      setAlert({ type: 'error', message: 'Error al eliminar el reporte: ' + (err as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!jsonData) return null;
 
   return (
-      <Card className="perfil-personal__card mb-4 hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="card-header">
-              <div className="flex justify-between items-start">
-                  <div>
-                      <CardTitle className="card-title">{jsonData.title}</CardTitle>
-                      <CardDescription className="card-description">{jsonData.date}</CardDescription>
-                  </div>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
-                      {jsonData.category}
-                  </Badge>
+    <Card className="perfil-personal__card mb-4 hover:shadow-lg transition-shadow duration-300">
+      <CardHeader className="card-header">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="card-title">{jsonData.title}</CardTitle>
+            <CardDescription className="card-description">{jsonData.date}</CardDescription>
+          </div>
+          <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+            {jsonData.category}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="card-content">
+        {showFullReport ? (
+          <>
+            <Button 
+              variant="outline" 
+              className="button-outline" 
+              onClick={() => setShowFullReport(false)}
+            >
+              Volver
+            </Button>
+            <ScrollArea className="scroll-area">
+              <div className="apa-text mt-4 p-4 bg-white rounded-md">
+                <h1 className="title h1">{jsonData.title}</h1>
+                <ReactMarkdown className="long">
+                  {jsonData.content}
+                </ReactMarkdown>
               </div>
-          </CardHeader>
-          <CardContent className="card-content">
-              {showFullReport ? (
-                  <>
-                      <Button 
-                          variant="outline" 
-                          className="button-outline" 
-                          onClick={() => setShowFullReport(false)}
-                      >
-                          Volver
-                      </Button>
-                      <ScrollArea className="scroll-area">
-                          <div className="apa-text">
-                              <ReactMarkdown 
-                                  className="max-w-none"
-                                  remarkPlugins={[remarkGfm]}
-                              >
-                                  {jsonData.content}
-                              </ReactMarkdown>
-                          </div>
-                      </ScrollArea>
-                  </>
-              ) : (
-                  <>
-                      <p className="text-sm text-muted-foreground line-clamp-3">{jsonData.summary}</p>
-                      <Button 
-                          variant="outline" 
-                          className="button-outline"
-                          onClick={() => setShowFullReport(true)}
-                      >
-                          Ver Informe Completo
-                      </Button>
-                  </>
-              )}
-          </CardContent>
-      </Card>
+            </ScrollArea>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground line-clamp-3">{jsonData.summary}</p>
+            <Button 
+              variant="outline" 
+              className="button-outline"
+              onClick={() => setShowFullReport(true)}
+            >
+              Ver Informe Completo
+            </Button>
+            
+            {alert && (
+              <Alert variant={alert.type === 'success' ? 'default' : 'destructive'}>
+                <AlertTitle>{alert.type === 'success' ? 'Éxito' : 'Error'}</AlertTitle>
+                <AlertDescription>{alert.message}</AlertDescription>
+              </Alert>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
@@ -92,13 +141,6 @@ export default function PerfilPersonal() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string>("conocimiento");
-  const [profile, setProfile] = useState({
-    full_name: '',
-    email: '',
-    first_cat: '',
-    second_cat: '',
-    interests: [] as string[]
-  });
 
   const listFiles = async (folder: string) => {
     try {
@@ -158,31 +200,6 @@ export default function PerfilPersonal() {
     listFiles(selectedFolder);
   }, [selectedFolder]);
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error fetching user:", error);
-        return;
-      }
-
-      if (user) {
-        const { full_name, first_cat, second_cat, interests } = user.user_metadata;
-        setProfile({
-          full_name: full_name || 'Usuario desconocido',
-          email: user.email || 'Email no disponible',
-          first_cat: first_cat || 'Categoría no especificada',
-          second_cat: second_cat || 'Ocupación no especificada',
-          interests: typeof interests === 'string' ? 
-            interests.split(',').map(item => item.trim()) : 
-            Array.isArray(interests) ? interests : []
-        });
-      }
-    };
-
-    fetchUserProfile();
-  }, []);
-
   return (
     <div className="perfil-personal__container">
       <Card className="perfil-personal__card mb-6">
@@ -190,21 +207,21 @@ export default function PerfilPersonal() {
           <Avatar className="perfil-personal__avatar">
             <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Avatar" />
             <AvatarFallback>
-              {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {user?.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </CardHeader>
         <CardContent>
           <h2 className="perfil-personal__name">
-            {profile.full_name}
+            {user?.user_metadata.full_name}
           </h2>
-          <p className="perfil-personal__category">{profile.first_cat}</p>
+          <p className="perfil-personal__category">{user?.user_metadata.first_cat}</p>
           <div className="perfil-personal__interests">
             <h3 className="font-semibold text-gray-700">Intereses:</h3>
             <ul className="list-none space-y-1">
-              {profile.interests.map((interest, index) => (
+              {user?.user_metadata.interests.split(',').map((interest: string, index: number) => (
                 <li key={index} className="perfil-personal__interest-item">
-                  {interest}
+                  {interest.trim()}
                 </li>
               ))}
             </ul>
@@ -212,7 +229,13 @@ export default function PerfilPersonal() {
         </CardContent>
       </Card>
 
-      <Tabs value={selectedFolder} onValueChange={setSelectedFolder} className="w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Perfil Personal</h1>
+      </div>
+
+      <Tabs value={selectedFolder} onValueChange={(value) => {
+        setSelectedFolder(value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_'));
+      }} className="w-full">
         <TabsList className="tabs-list">
           <TabsTrigger value="conocimiento" className="tabs-trigger">Conocimiento</TabsTrigger>
           <TabsTrigger value="profesion" className="tabs-trigger">Profesión</TabsTrigger>
@@ -222,12 +245,14 @@ export default function PerfilPersonal() {
           <TabsContent key={folder} value={folder}>
             {loading && <p>Cargando archivos...</p>}
             {error && <p className="text-red-500">{error}</p>}
-            {files.map((file) => (
+            {user && files.map((file) => (
               <PostItem
                 key={file.path}
                 file={file}
                 jsonData={jsonDataMap.get(file.path) || null}
-                onSelect={() => {}}
+                onSelect={() => listFiles(selectedFolder)}
+                user={user}
+                selectedFolder={selectedFolder}
               />
             ))}
           </TabsContent>
@@ -236,3 +261,4 @@ export default function PerfilPersonal() {
     </div>
   );
 }
+

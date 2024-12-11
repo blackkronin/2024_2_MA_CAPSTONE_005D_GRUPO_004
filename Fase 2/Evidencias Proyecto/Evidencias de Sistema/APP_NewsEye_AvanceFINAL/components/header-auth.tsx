@@ -7,7 +7,8 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { supabase } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { FaUser, FaUsers, FaRobot } from "react-icons/fa";
+import { FaUser, FaUsers, FaRobot, FaBars } from "react-icons/fa";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const HeaderAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -58,34 +59,64 @@ const HeaderAuth = () => {
   }
 
   return user ? (
-    <div className="flex items-center gap-4">
-      <Button asChild size="sm" variant="outline">
-        <Link href="/Profile">
-          <FaUser className="mr-2" /> Perfil
-        </Link>
-      </Button>
-      <Button asChild size="sm" variant="outline">
-        <Link href="/social">
-          <FaUsers className="mr-2" /> Comunidad
-        </Link>
-      </Button>
-      <Button asChild size="sm" variant="outline">
-        <Link href="/AIReporter">
-          <FaRobot className="mr-2" /> HuemulAI
-        </Link>
-      </Button>
-      <span className="text-sm">
-        Hola, {userName}
-        {second_cat && (
-          <span className="text-muted-foreground text-xs ml-1">
-            • {second_cat}
-          </span>
-        )}
-      </span>
-      
-      <Button onClick={handleSignOut} variant={"outline"}>
-        Cerrar Sesión
-      </Button>
+    <div className="flex items-center justify-between p-4">
+      <div className="flex items-center gap-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="md:hidden">
+              <FaBars />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem asChild>
+              <Link href="/Profile">
+                <FaUser className="mr-2" /> Perfil
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/social">
+                <FaUsers className="mr-2" /> Comunidad
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/AIReporter">
+                <FaRobot className="mr-2" /> HuemulAI
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
+              Cerrar Sesión
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="text-sm">
+          Hola, {userName}
+          {second_cat && (
+            <span className="text-muted-foreground text-xs ml-1">
+              • {second_cat}
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="hidden md:flex items-center gap-4">
+        <Button asChild size="sm" variant="outline">
+          <Link href="/Profile">
+            <FaUser className="mr-2" /> Perfil
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/social">
+            <FaUsers className="mr-2" /> Comunidad
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/AIReporter">
+            <FaRobot className="mr-2" /> HuemulAI
+          </Link>
+        </Button>
+        <Button onClick={handleSignOut} variant={"outline"}>
+          Cerrar Sesión
+        </Button>
+      </div>
     </div>
   ) : (
     <div className="flex gap-2">

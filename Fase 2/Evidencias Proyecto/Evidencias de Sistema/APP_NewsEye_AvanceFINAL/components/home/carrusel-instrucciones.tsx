@@ -36,7 +36,7 @@ export default function CarruselInstrucciones() {
   }, [])
 
   return (
-    <div className="relative h-64 w-full overflow-hidden bg-gradient-to-r from-green-700 to-blue-800">
+    <div className="relative w-full h-72 overflow-hidden bg-gradient-to-r from-purple-700 to-indigo-800">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentSlide}
@@ -53,7 +53,7 @@ export default function CarruselInstrucciones() {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="mb-2 text-3xl font-bold text-center"
+            className="mb-2 text-2xl font-bold text-center"
           >
             {slides[currentSlide].title}
           </motion.h1>

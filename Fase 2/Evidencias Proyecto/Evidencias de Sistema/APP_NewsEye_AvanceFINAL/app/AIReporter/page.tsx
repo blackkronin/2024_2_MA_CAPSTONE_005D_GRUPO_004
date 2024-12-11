@@ -6,10 +6,11 @@ import CarruselInstrucciones from '@/components/home/carrusel-instrucciones';
 
 const AIReporterPage = () => {
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <CarruselInstrucciones />
-      <br />
-      <OpenAIReportGen />
+      <div className="mt-8">
+        <OpenAIReportGen />
+      </div>
     </div>
   );
 };

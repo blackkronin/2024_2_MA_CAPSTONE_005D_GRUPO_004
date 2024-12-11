@@ -54,17 +54,17 @@ export default function SignIn() {
       }
 
       if (data.user) {
-        const { full_name, birth_date, studies } = data.user.user_metadata;
+        const { full_name, birth_date, first_cat,second_cat } = data.user.user_metadata;
         const age = calculateAge(birth_date);
         const userInfo = {
           age,
-          occupation: studies
+          occupation: first_cat
         };
         
         const categoria = categorizeUser(userInfo);
 
         toast.success(
-          `¡Bienvenido ${full_name}! Tu categoría es: ${categoria}`,
+          `¡Bienvenido ${full_name}! Tu categoría es: ${second_cat}`,
           {
             ...toastOptions,
             position: 'top-center',

@@ -19,9 +19,10 @@ interface Post {
   date: string
   content: string
   user_id: string
-  views_count: number
-  likes_count: number
-  comments_count: number
+  views_count: number,
+  likes_count: number,
+  comments_count: number,
+  author: string
 }
 
 interface CommunityPostsProps {
@@ -29,34 +30,18 @@ interface CommunityPostsProps {
   loading: boolean
 }
 
-interface User {
-  id: string
-  full_name: string
-}
-
 export default function CommunityPosts({ posts, loading }: CommunityPostsProps) {
-  const [users, setUsers] = useState<Map<string, User>>(new Map())
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase.from('usuarios').select('id, full_name')
-      if (error) {
-        console.error('Error fetching users:', error)
-        return
-      }
-      const usersMap = new Map(data.map((user: User) => [user.id, user]))
-      setUsers(usersMap)
-    }
-
-    fetchUsers()
-  }, [])
+    console.log('Posts:', posts)
+  }, [posts])
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, index) => (
-          <Skeleton key={index} className="h-48 w-full" />
+          <Skeleton key={index} className="h-64 w-full" />
         ))}
       </div>
     )
@@ -77,11 +62,11 @@ export default function CommunityPosts({ posts, loading }: CommunityPostsProps) 
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar>
                       <AvatarFallback>
-                        {users.get(post.user_id)?.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || 'NN'}
+                        {post.author?.split(" ").map(n => n[0]).join("").toUpperCase() || 'NN'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-sm">{users.get(post.user_id)?.full_name || 'Usuario desconocido'}</p>
+                      <p className="font-medium text-sm">{post.author || 'Usuario desconocido'}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(post.date), { 
                           addSuffix: true,
@@ -132,4 +117,3 @@ export default function CommunityPosts({ posts, loading }: CommunityPostsProps) 
     </div>
   )
 }
-

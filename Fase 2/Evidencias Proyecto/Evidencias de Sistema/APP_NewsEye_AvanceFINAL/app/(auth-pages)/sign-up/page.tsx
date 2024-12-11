@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { supabase } from '../../../utils/supabase/client';
 import { categorizeUser } from '@/utils/categorizeUser';
 
-
 const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +15,7 @@ const SignUp = () => {
   const [interests, setInterests] = useState<string[]>([]); // Cambiado a array para múltiples intereses
   const [first_cat, setFirstCat] = useState('');
   const [second_cat, setSecondCat] = useState('');
+  const [secondCatOptions, setSecondCatOptions] = useState<string[]>([]);
   const [notification, setNotification] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
@@ -32,21 +32,17 @@ const SignUp = () => {
     );
   };
 
-  interface SignUpData {
-    email: string;
-    password: string;
-    options: {
-      emailRedirectTo: string;
-      data: {
-        full_name: string;
-        birth_date: string;
-        age: number;
-        interests: string;
-        first_cat: string;
-        second_cat: string;
-      };
-    };
-  }
+  const handleBirthDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newBirthDate = event.target.value;
+    setBirthDate(newBirthDate);
+
+    const age = calculateAge(newBirthDate);
+    const { firstCat, secondCatOptions } = categorizeUser({ age, occupation: 'estudiante' });
+
+    setFirstCat(firstCat);
+    setSecondCatOptions(secondCatOptions);
+    setSecondCat(secondCatOptions[0] || '');
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,20 +54,7 @@ const SignUp = () => {
 
     setError('');
 
-    const age = calculateAge(birthDate);
-
-    let firstCat = '';
-    if (age < 18) {
-      firstCat = 'estudiante';
-    } else if (age >= 18 && age <= 65) {
-      firstCat = 'profesional';
-    } else {
-      firstCat = 'comun';
-    }
-
-    setFirstCat(firstCat);
-
-    const signUpData: SignUpData = {
+    const signUpData = {
       email,
       password,
       options: {
@@ -79,112 +62,96 @@ const SignUp = () => {
         data: {
           full_name: name,
           birth_date: birthDate,
-          age: age,
+          age: calculateAge(birthDate),
           interests: interests.join(','),
-          first_cat: firstCat,
+          first_cat: first_cat,
           second_cat: second_cat,
         },
       },
     };
 
-    const { data, error: signUpError } = await supabase.auth.signUp(signUpData);
-
-    if (signUpError) {
-      console.log("Error en el registro:", signUpError);
-      setError(`Database error: ${signUpError.message}`);
-      return;
+    try {
+      const { error } = await supabase.auth.signUp(signUpData);
+      if (error) {
+        setError(error.message);
+      } else {
+        setNotification('Registro exitoso. Por favor, revisa tu correo electrónico para confirmar tu cuenta.');
+        router.push('/sign-in');
+      }
+    } catch (error) {
+      setError('Ocurrió un error durante el registro.');
     }
-
-    if (firstCat === 'comun') {
-      setNotification(`Hola ${name}, te has registrado exitosamente como un Usuario Común. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
-    } else {
-      setNotification(`Hola ${name}, te has registrado exitosamente como ${firstCat}. Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.`);
-    }
-
-    setTimeout(() => {
-      router.push('/sign-in');
-    }, 5000);
-
-    console.log("Registro exitoso:", data);
-  };
-
-  const hamburgerOptions: Record<string, string[]> = {
-    estudiante: ['Universitario', 'Escolar'],
-    profesional: ['Divulgador', 'Ingeniero', 'Pedagogía', 'Científico'],
-    comun: ['Inf Simple', 'Inf Detallada']
   };
 
   return (
     <div className="page-container">
+      <h1>Crear Cuenta</h1>
       <form onSubmit={handleSubmit}>
-        <h1>Registro de Usuario</h1>
         <div className="form-group">
-          <label htmlFor="email">Correo Electrónico:</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Contraseña:</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="confirmPassword">Repetir Contraseña:</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="name">Nombre:</label>
           <input
             type="text"
-            id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            required
+            placeholder="Nombre completo"
           />
         </div>
         <div className="form-group">
-          <label htmlFor="birthDate">Fecha de Nacimiento:</label>
           <input
-            type="date"
-            id="birthDate"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Correo electrónico"
           />
         </div>
-        {first_cat === 'profesional' && (
-          <div className="form-group">
-            <label htmlFor="secondCat">Subcategoría:</label>
-            <select
-              id="secondCat"
-              value={second_cat}
-              onChange={(e) => setSecondCat(e.target.value)}
-              required
-            >
-              <option value="">Seleccione...</option>
-              {hamburgerOptions[first_cat]?.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="form-group">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Contraseña"
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirmar contraseña"
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="date"
+            value={birthDate}
+            onChange={handleBirthDateChange}
+            placeholder="Fecha de nacimiento"
+          />
+        </div>
+        {birthDate && (
+          <>
+          <label htmlFor="first_cat">Tipo de Información relacionada a ti</label>
+            <div className="form-group">
+              <input
+                type="text"
+                value={first_cat}
+                readOnly
+                placeholder="Primera categoría"
+              />
+            </div>
+            <div className="form-group">
+              <select
+                value={second_cat}
+                onChange={(e) => setSecondCat(e.target.value)}
+                disabled={first_cat !== 'profesional'}
+              >
+                {secondCatOptions.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
         <div className="form-group">
           <label>Intereses:</label>

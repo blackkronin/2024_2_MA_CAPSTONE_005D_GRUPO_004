@@ -112,7 +112,7 @@ export const generateDynamicPrompt = (
   ${articles.map((a) => `${a.title}: ${a.content}`).join("\n")}
 
   Consulta:
-  Utilizando únicamente la información proporcionada arriba, responde la siguiente consulta de forma detallada: "${query}".
+  Utilizando únicamente la información de los articulos proporcionada arriba, responde la siguiente consulta de forma detallada: "${query}".
 
   Tono:
   El informe debe escribirse con el siguiente tono: ${Tone}.
@@ -137,7 +137,7 @@ export const generateDynamicPrompt = (
 
 
   Instrucciones Adicionales:
-  - Al mencionar al usuario solo menciona información que sea de utilidad y no que tenga que ver con los procesos a realizar.
+  - No menciones los procesos se realizan para obtener la información, solo enfócate en la redacción del informe.
   - Crea una estructura con titulos dinámicos, claros y que se adecuen al contexto y segun la estructura del usuario.
   - Usa fuentes confiables y actuales, priorizando la relevancia y precisión de la información.
   - Asegúrate de que cada URL esté hipervinculada en el formato [nombre del sitio](url).

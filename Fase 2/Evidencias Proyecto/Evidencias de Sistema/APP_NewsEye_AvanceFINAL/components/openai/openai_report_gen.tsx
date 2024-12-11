@@ -146,6 +146,7 @@ const OpenAIReportGen: React.FC = ({}) => {
 
         const config = getConfigForUser(primaryCategory, secondaryCategory);
         const reportJSON = {
+          author: user?.user_metadata.full_name || "Usuario Desconocido",
           title,
           summary,
           category,
@@ -168,7 +169,7 @@ const OpenAIReportGen: React.FC = ({}) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w mx-auto">
       <h2 className="text-2xl font-bold">Generador de Reportes IA</h2>
       <textarea
         value={prompt}

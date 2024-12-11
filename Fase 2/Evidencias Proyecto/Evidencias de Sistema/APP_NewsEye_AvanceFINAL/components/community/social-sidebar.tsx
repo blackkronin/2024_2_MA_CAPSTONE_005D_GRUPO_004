@@ -42,40 +42,43 @@ export default function SocialSidebar() {
   }
 
   return (
-    <Card className="w-80 h-screen border-l rounded-none">
+    <Card className="w-full md:w-80 h-screen border-l rounded-none">
       <CardHeader>
         <CardTitle>Miembros Activos</CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-100px)]">
           <div className="space-y-4">
-            {users.map((user) => (
-              <div key={user.id} className="flex flex-col gap-3 p-3 rounded-lg hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      {user.full_name.split(" ").map(n => n[0]).join("").toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{user.full_name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.first_cat}</p>
+            {loading ? (
+              <p>Cargando...</p>
+            ) : (
+              users.map((user) => (
+                <div key={user.id} className="flex flex-col gap-3 p-3 rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarFallback>
+                        {user.full_name.split(" ").map(n => n[0]).join("").toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{user.full_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.first_cat}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs">
+                      reportes
+                    </Badge>
+                    <Button variant="ghost" size="sm">
+                      Ver Perfil
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="text-xs">
-                    reportes
-                  </Badge>
-                  <Button variant="ghost" size="sm">
-                    Ver Perfil
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
   )
 }
-
