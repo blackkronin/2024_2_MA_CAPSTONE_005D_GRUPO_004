@@ -100,28 +100,27 @@ export const generateDynamicPrompt = (
   const formattedArticles = articles.map(a => `${a.title}: ${a.content}`).join("\n");
 
   return `
-    # Informe de Consulta
+  Informe de Consulta
 
-  ## Información del Usuario:
-  -------------------------------------------------
+  Información del Usuario:
+
   ${userInfo}
-  -------------------------------------------------
 
-  ## Información de los Artículos:
-  -------------------------------------------------
+
+  Información de los Artículos:
+ 
   ${articles.map((a) => `${a.title}: ${a.content}`).join("\n")}
-  -------------------------------------------------
 
-  ## Consulta:
+  Consulta:
   Utilizando únicamente la información proporcionada arriba, responde la siguiente consulta de forma detallada: "${query}".
 
-  ### Tono:
+  Tono:
   El informe debe escribirse con el siguiente tono: ${Tone}.
 
-  ### Estructura del Informe:
+  Estructura del Informe:
   El informe debe seguir esta estructura: ${config.structure.join(", ")}.
 
-  ### Requisitos Adicionales:
+  Requisitos Adicionales:
   - Asegúrate de utilizar la estructura de informe señalada y el tono especificado para redactar el informe.
   - Profundiza en los conceptos del tono y de la estructura para generar una idea clara del destinatario del informe y sus necesidades.
   - Organiza la información de manera lógica, asegurando una presentación coherente y fácil de seguir.
@@ -133,44 +132,11 @@ export const generateDynamicPrompt = (
   - Usa Markdown y el formato APA para las referencias, asegurando la cohesión en el formato del documento.
   - Incluye citas en el texto con formato [cita en texto](url) para mantener la claridad y la referencia adecuada.
   - Termina con una lista detallada de referencias, sin duplicados, utilizando URLs completas para facilitar el acceso a las fuentes.
-  - Debes buscar en fuentes que se relacionen a la categoria de usuario , EJ (puedes inferir el resto de categorias): 
-
-    Estudiante: 
-      Enciclopedias y diccionarios, Directorios, Fuentes biográficas ,Fuentes estadísticas, Bibliografías, Catálogos, Informes de investigaciones, Artículos académicos, Manuales, Resúmenes y síntesis 
-      Libros, monografías, revistas y tesis, Sitios web de organizaciones académicas o sin fines de lucro, Google Scholar, Scielo, RefSeek
-    cientifico: 
-      Artículos científicos
-      Revistas académicas especializadas
-      Libros de referencia
-      Publicaciones gubernamentales
-      Sitios web de organizaciones académicas o sin fines de lucro
-      Bases de datos referenciales como Wos o Scopus 
-
-      Otras fuentes de información primaria pueden ser:
-        Patentes
-        Normas
-        Tesis
-        Actas de congresos
-        Proyectos de investigación
-        Publicaciones oficiales
-        Monografías 
-    Pedagogia:
-      fuentes Primarias, Secundarias y terciarias, Información académica, Fuentes gratuitas y abiertas, Google Académico
-      libros, artículos de revistas, tesis doctorales, memorias de congresos, datos estadísticos, documentos gubernamentales o de políticas públicas.
-
-
-    ingeniero:
-      Bases de datos multidisciplinares y especializadas, Libros, Artículos y revistas, Trabajos académicos, Sitios web.
-      Documentos oficiales, Estadísticas, Libros, Artículos científicos, Tesis, Informes técnicos, Textos, Videos, Audios, Fotografías.
-
-    Usuario comun:
-      artículos de periódicos, Artículos de revistas científicas, Publicaciones gubernamentales, Libros de referencia, Sitios web de organizaciones académicas o sin fines de lucro.
-
-    
+  
     
 
 
-  ### Instrucciones Adicionales:
+  Instrucciones Adicionales:
   - Al mencionar al usuario solo menciona información que sea de utilidad y no que tenga que ver con los procesos a realizar.
   - Crea una estructura con titulos dinámicos, claros y que se adecuen al contexto y segun la estructura del usuario.
   - Usa fuentes confiables y actuales, priorizando la relevancia y precisión de la información.
@@ -179,7 +145,7 @@ export const generateDynamicPrompt = (
   - Incluye la fecha actual: ${new Date().toISOString().split("T")[0]}.
   - Define la categoría exacta a la que se relaciona el reporte y guárdala en una variable ${selectedTopic} para su importación a la base de datos: ${topics}
 
-  ### Formato de Markdown:
+  Formato de Markdown:
   - Título principal: # Título
   - Encabezados principales: ## Encabezado
   - Subtítulos: ### Subtítulo

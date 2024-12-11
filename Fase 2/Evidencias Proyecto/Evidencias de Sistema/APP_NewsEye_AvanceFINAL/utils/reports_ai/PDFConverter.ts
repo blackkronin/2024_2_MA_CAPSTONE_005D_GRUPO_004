@@ -1,120 +1,101 @@
-import { jsPDF } from 'jspdf';
+import { jsPDF } from "jspdf";
 
 export const downloadPDF = (content: string) => {
-    const doc = new jsPDF();
-    const lines = content.split('\n');
-    const creationDate = new Date().toLocaleDateString();
-    const indexEntries: { title: string; page: number }[] = [];
-    let yOffset = 20;
-    let currentPage = 3; // El contenido del informe empieza en la página 3
-    //margen estandar APA
-    const leftMargin = 20; // 1 pulgada de margen izquierdo
-    const rightMargin = 20; // 1 pulgada de margen derecho
-    const topMargin = 20; // Márgen superior  
-    const bottomMargin = 20; // Márgen inferior
+    const doc = new jsPDF({
+        unit: "mm",
+        format: "a4",
+    });
+
+    // Márgenes APA estándar
+    const leftMargin = 25.4; // 1 pulgada
+    const rightMargin = 25.4;
+    const topMargin = 25.4;
+    const bottomMargin = 25.4;
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     const contentWidth = pageWidth - leftMargin - rightMargin;
 
-    // === Primera página: Título y fecha ===
-    doc.setFontSize(22);
-    doc.setFont("times", "normal"); // Times New Roman
-    doc.text("Informe Generado por AI", 105, 50, { align: "center" });
-    doc.setFontSize(12); // Tamaño estándar
-    doc.setFont("times", "normal");
-    doc.text("Fecha de creación: " + creationDate, 105, 70, { align: "center" });
-    doc.setTextColor(0, 0, 0); // Texto en negro
-    doc.addPage(); // Segunda página para el índice
+    let yOffset = topMargin; // Coordenada inicial vertical
 
-    // === Segunda página: Índice ===
-    doc.setFontSize(18);
+    // === Primera página: Título ===
     doc.setFont("times", "bold");
-    doc.text("Índice", 105, 20, { align: "center" });
-    yOffset = 30;
+    doc.setFontSize(18);
+    doc.text("Informe de Consulta: Biotecnología y su impacto en el mundo", pageWidth / 2, yOffset, { align: "center" });
+    yOffset += 20;
 
-    lines.forEach((line) => {
-      if (line.startsWith('# ')) {
-        indexEntries.push({ title: line.replace('# ', ''), page: currentPage });
-      } else if (line.startsWith('## ')) {
-        indexEntries.push({ title: line.replace('## ', ''), page: currentPage });
-      }
-
-      if (line.startsWith('# ') || line.startsWith('## ')) {
-        yOffset += 10;  
-      }
-
-      if (yOffset > 280) {
-        doc.addPage();
-        yOffset = 20;
-      }
-    });
-
-    // Agregar el índice en la segunda página
-    doc.setPage(2);
-    doc.setFontSize(12);
     doc.setFont("times", "normal");
-
-    indexEntries.forEach((entry) => {
-      doc.text(`${entry.title} .......................... ${entry.page}`, 20, yOffset);
-      yOffset += 8;
-
-      if (yOffset > 280) {
-        doc.addPage();
-        yOffset = 20;
-      }
-    });
-
-    // === Tercera página en adelante: Contenido del informe ===
+    doc.setFontSize(12);
+    const creationDate = new Date().toLocaleDateString();
+    doc.text("Fecha de creación: " + creationDate, pageWidth / 2, yOffset, { align: "center" });
     doc.addPage();
-    yOffset = 20;
+
+    // === Segunda página en adelante: Contenido ===
+    yOffset = topMargin;
+    const lines = content.split("\n");
+
     lines.forEach((line) => {
-      if (line.startsWith('# ')) {
-        doc.setFontSize(18);
-        doc.setFont("times", "bold");
-        doc.text(line.replace('# ', ''), leftMargin, yOffset);
-        yOffset += 10;
-      } else if (line.startsWith('## ')) {
-        doc.setFontSize(16);
-        doc.setFont("times", "bold");
-        doc.text(line.replace('## ', ''), leftMargin, yOffset);
-        yOffset += 10;
-      } else {
-        doc.setFontSize(12);
-        doc.setFont("times", "normal");
-        const splitText = doc.splitTextToSize(line, contentWidth);
-        doc.text(splitText, leftMargin, yOffset, { align: "justify" });
-        yOffset += splitText.length * 6;
-      }
-    
-      if (yOffset > doc.internal.pageSize.height - bottomMargin) {
-        doc.addPage();
-        yOffset = topMargin;
-      }
+        // Encabezados
+        if (line.startsWith("# ")) {
+            doc.setFont("times", "bold");
+            doc.setFontSize(14); // Encabezado nivel 1
+            doc.text(line.replace("# ", ""), leftMargin, yOffset);
+            yOffset += 10;
+        } else if (line.startsWith("## ")) {
+            doc.setFont("times", "bold");
+            doc.setFontSize(12); // Encabezado nivel 2
+            doc.text(line.replace("## ", ""), leftMargin, yOffset);
+            yOffset += 8;
+        } else if (line.startsWith("### ")) {
+            doc.setFont("times", "italic");
+            doc.setFontSize(12); // Encabezado nivel 3
+            doc.text(line.replace("### ", ""), leftMargin, yOffset);
+            yOffset += 6;
+        } else if (line.trim() !== "") {
+            // Texto normal con ajuste de línea
+            doc.setFont("times", "normal");
+            doc.setFontSize(12);
+            const splitText:string[] = doc.splitTextToSize(line, contentWidth);
+            splitText.forEach((textLine) => {
+                doc.text(textLine, leftMargin, yOffset, { align: "justify" });
+                yOffset += 6; // Ajuste de espaciado entre líneas
+            });
+        }
+
+        // Crear nueva página si excedemos el margen inferior
+        if (yOffset > pageHeight - bottomMargin) {
+            doc.addPage();
+            yOffset = topMargin;
+        }
     });
 
-
-    // Agregar una nueva página para las referencias
+    // === Referencias ===
     doc.addPage();
     yOffset = topMargin;
-
-    doc.setFontSize(16);
     doc.setFont("times", "bold");
+    doc.setFontSize(16);
     doc.text("Referencias", leftMargin, yOffset);
     yOffset += 10;
 
-    referencias.forEach((ref) => {
-    doc.setFontSize(12);
-    doc.setFont("times", "normal");
-    const splitRef = doc.splitTextToSize(ref, contentWidth);
-    doc.text(splitRef, leftMargin, yOffset, { align: "justify" });
-    yOffset += splitRef.length * 6;
+    const references = [
+        "Referencia 1: Detalle en formato APA.",
+        "Referencia 2: Otra referencia importante.",
+    ];
 
-    if (yOffset > doc.internal.pageSize.height - bottomMargin) {
-      doc.addPage();
-      yOffset = topMargin;
-    }
-  });
+    references.forEach((ref) => {
+        doc.setFont("times", "normal");
+        doc.setFontSize(12);
+        const splitRef: string[] = doc.splitTextToSize(ref, contentWidth);
+        splitRef.forEach((refLine) => {
+            doc.text(refLine, leftMargin, yOffset, { align: "justify" });
+            yOffset += 6;
+        });
 
-    //pasar a supabase
-    doc.save('reporte_ai.pdf');
-  };
- 
+        if (yOffset > pageHeight - bottomMargin) {
+            doc.addPage();
+            yOffset = topMargin;
+        }
+    });
+
+    // Guardar el PDF
+    doc.save("reporte_ai.pdf");
+};

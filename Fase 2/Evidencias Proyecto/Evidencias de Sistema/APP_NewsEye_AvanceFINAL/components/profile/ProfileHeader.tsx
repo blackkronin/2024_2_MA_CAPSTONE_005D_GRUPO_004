@@ -35,51 +35,53 @@ const PostItem = ({ file, jsonData, onSelect }: { file: FileData; jsonData: Json
   if (!jsonData) return null;
 
   return (
-    <Card className="perfil-personal__card mb-4 hover:shadow-lg transition-shadow duration-300">
-      <CardHeader className="card-header">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="card-title">{jsonData.title}</CardTitle>
-            <CardDescription className="card-description">{jsonData.date}</CardDescription>
-          </div>
-          <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
-            {jsonData.category}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="card-content">
-        {showFullReport ? (
-          <>
-            <Button 
-              variant="outline" 
-              className="button-outline" 
-              onClick={() => setShowFullReport(false)}
-            >
-              Volver
-            </Button>
-            <ScrollArea className="scroll-area">
-              <ReactMarkdown 
-                className="max-w-none"
-                remarkPlugins={[remarkGfm]}
-              >
-                {jsonData.content}
-              </ReactMarkdown>
-            </ScrollArea>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground line-clamp-3">{jsonData.summary}</p>
-            <Button 
-              variant="outline" 
-              className="button-outline"
-              onClick={() => setShowFullReport(true)}
-            >
-              Ver Informe Completo
-            </Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
+      <Card className="perfil-personal__card mb-4 hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="card-header">
+              <div className="flex justify-between items-start">
+                  <div>
+                      <CardTitle className="card-title">{jsonData.title}</CardTitle>
+                      <CardDescription className="card-description">{jsonData.date}</CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                      {jsonData.category}
+                  </Badge>
+              </div>
+          </CardHeader>
+          <CardContent className="card-content">
+              {showFullReport ? (
+                  <>
+                      <Button 
+                          variant="outline" 
+                          className="button-outline" 
+                          onClick={() => setShowFullReport(false)}
+                      >
+                          Volver
+                      </Button>
+                      <ScrollArea className="scroll-area">
+                          <div className="apa-text">
+                              <ReactMarkdown 
+                                  className="max-w-none"
+                                  remarkPlugins={[remarkGfm]}
+                              >
+                                  {jsonData.content}
+                              </ReactMarkdown>
+                          </div>
+                      </ScrollArea>
+                  </>
+              ) : (
+                  <>
+                      <p className="text-sm text-muted-foreground line-clamp-3">{jsonData.summary}</p>
+                      <Button 
+                          variant="outline" 
+                          className="button-outline"
+                          onClick={() => setShowFullReport(true)}
+                      >
+                          Ver Informe Completo
+                      </Button>
+                  </>
+              )}
+          </CardContent>
+      </Card>
   );
 };
 

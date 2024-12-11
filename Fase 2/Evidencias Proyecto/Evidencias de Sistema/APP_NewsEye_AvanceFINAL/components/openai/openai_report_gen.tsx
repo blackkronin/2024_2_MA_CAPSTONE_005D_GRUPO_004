@@ -201,7 +201,7 @@ const OpenAIReportGen: React.FC = ({}) => {
 
       {streamedContent && (
         <>
-          <div className="report-container mt-4 p-4 bg-white rounded-md">
+          <div className="apa-text mt-4 p-4 bg-white rounded-md">
             <ReactMarkdown
               children={streamedContent}
               remarkPlugins={[remarkGfm]}
@@ -209,14 +209,13 @@ const OpenAIReportGen: React.FC = ({}) => {
                 h1: ({ node, ...props }) => <h1 className="title h1" {...props} />,
                 h2: ({ node, ...props }) => <h2 className="title h2" {...props} />,
                 h3: ({ node, ...props }) => <h3 className="title h3" {...props} />,
-                p: ({ node, ...props }) => <p className="long apa" {...props} />,
-                ul: ({ node, ...props }) => <ul className="apa" {...props} />,
-                li: ({ node, ...props }) => <li className="apa" {...props} />,
-                a: ({ node, ...props }) => <a className="apa-citation" {...props} />,
+                p: ({ node, ...props }) => <p className="long" {...props} />,
+                ul: ({ node, ...props }) => <ul className="apaReferences" {...props} />,
+                li: ({ node, ...props }) => <li className="apaReferences" {...props} />,
                 table: ({ node, ...props }) => <table className="apaTable" {...props} />,
                 th: ({ node, ...props }) => <th className="apaTable" {...props} />,
                 td: ({ node, ...props }) => <td className="apaTable" {...props} />,
-              }}
+            }}
             />
           </div>
           <button onClick={() => downloadPDF(streamedContent)} className="download-pdf-button mt-4">
